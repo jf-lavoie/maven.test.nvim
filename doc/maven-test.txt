@@ -1,0 +1,91 @@
+*maven-test.txt*  Maven test runner integration for Neovim
+
+==============================================================================
+CONTENTS                                                  *maven-test-contents*
+
+    1. Introduction ............................ |maven-test-introduction|
+    2. Requirements ............................ |maven-test-requirements|
+    3. Commands ................................ |maven-test-commands|
+    4. Configuration ........................... |maven-test-configuration|
+    5. Functions ............................... |maven-test-functions|
+
+==============================================================================
+INTRODUCTION                                          *maven-test-introduction*
+
+maven.test.nvim is a Neovim plugin that provides Maven integration for
+testing Java projects. Using Neovim's treesitter, it detects Java test
+files and provides commands to run tests using Maven.
+
+Features:
+  - Run individual test methods
+  - Run entire test classes
+  - Run complete test suites
+  - Interactive floating window for test selection
+  - Treesitter-based test detection
+
+==============================================================================
+REQUIREMENTS                                          *maven-test-requirements*
+
+  - Neovim >= 0.9.0
+  - nvim-treesitter with Java parser installed
+  - Maven installed and available in PATH
+
+==============================================================================
+COMMANDS                                                  *maven-test-commands*
+
+:MavenTest                                                         *:MavenTest*
+    Opens a floating window to select and run a specific test method or
+    the entire test class.
+
+:MavenTestClass                                               *:MavenTestClass*
+    Runs all tests in the current class.
+
+:MavenTestAll                                                   *:MavenTestAll*
+    Runs all tests in the project.
+
+==============================================================================
+CONFIGURATION                                        *maven-test-configuration*
+
+Setup function:                                          *maven-test.setup()*
+
+    require('maven-test').setup({
+      maven_command = "mvn",
+      floating_window = {
+        width = 0.8,
+        height = 0.6,
+        border = "rounded",
+      },
+    })
+
+Options:
+
+maven_command                                          *maven-test.maven_command*
+    Type: string
+    Default: "mvn"
+    
+    Maven command to use for running tests.
+
+floating_window                                      *maven-test.floating_window*
+    Type: table
+    
+    Configuration for the floating window that displays test selection.
+    
+    width: float (0.0-1.0) - Width as percentage of editor width
+    height: float (0.0-1.0) - Height as percentage of editor height
+    border: string - Border style: "none", "single", "double", "rounded",
+                     "solid", "shadow"
+
+==============================================================================
+FUNCTIONS                                                *maven-test-functions*
+
+require('maven-test').run_test()                        *maven-test.run_test()*
+    Opens the interactive test selector.
+
+require('maven-test').run_test_class()            *maven-test.run_test_class()*
+    Runs all tests in the current class.
+
+require('maven-test').run_all_tests()              *maven-test.run_all_tests()*
+    Runs all tests in the project.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
