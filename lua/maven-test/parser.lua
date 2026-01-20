@@ -17,7 +17,7 @@ function M.get_test_methods()
     (method_declaration
       (modifiers
         (marker_annotation
-          name: (identifier) @annotation (#match? @annotation "^(Test|ArchTest)$")))
+          name: (identifier) @annotation (#eq? @annotation "Test")))
       name: (identifier) @method.name) @method
   ]]
 	)
@@ -29,6 +29,57 @@ function M.get_test_methods()
 			local start_row, _, _, _ = node:range()
 			table.insert(tests, {
 				name = method_name,
+				line = start_row + 1,
+				type = "method",
+			})
+		end
+	end
+
+	-- Query for @ArchTest annotation on methods
+	local query_archtest = vim.treesitter.query.parse(
+		"java",
+		[[
+    (method_declaration
+      (modifiers
+        (marker_annotation
+          name: (identifier) @annotation (#eq? @annotation "ArchTest")))
+      name: (identifier) @method.name) @method
+  ]]
+	)
+
+	for id, node in query_archtest:iter_captures(root, bufnr, 0, -1) do
+		local name = query_archtest.captures[id]
+		if name == "method.name" then
+			local method_name = vim.treesitter.get_node_text(node, bufnr)
+			local start_row, _, _, _ = node:range()
+			table.insert(tests, {
+				name = method_name,
+				line = start_row + 1,
+				type = "method",
+			})
+		end
+	end
+
+	-- Query for @ArchTest annotation on field declarations
+	local query_archtest_field = vim.treesitter.query.parse(
+		"java",
+		[[
+    (field_declaration
+      (modifiers
+        (marker_annotation
+          name: (identifier) @annotation (#eq? @annotation "ArchTest")))
+      declarator: (variable_declarator
+        name: (identifier) @field.name)) @field
+  ]]
+	)
+
+	for id, node in query_archtest_field:iter_captures(root, bufnr, 0, -1) do
+		local name = query_archtest_field.captures[id]
+		if name == "field.name" then
+			local field_name = vim.treesitter.get_node_text(node, bufnr)
+			local start_row, _, _, _ = node:range()
+			table.insert(tests, {
+				name = field_name,
 				line = start_row + 1,
 				type = "method",
 			})
