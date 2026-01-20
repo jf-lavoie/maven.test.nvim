@@ -27,12 +27,22 @@ The default mappings are:
 - <leader>Ml : open the test local function selection window
 
 
-## Plugin guidelines
+## Plugin features guidelines
 
 When a user selects a test or a series of test to run, a command terminal window opens at the bottom of nvim, showing the Maven output in real time.
 
 The custom user commands should exists only when in a Java file.
 
+The plugin should support tests that are annotated with @Test and @ArchTest annotations.
+
+
+
+### Future improvements
+
+* integration with pickers for better selection UI
+* display command to be executed in the floating window before running the tests
+* ability to add custom arguments to commands. This should be done on a per project basis, maybe using a configuration file.
+* ability to configure which test specs to use (e.g., JUnit, TestNG, ArchUnit, etc.)
 
 
 

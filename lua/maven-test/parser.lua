@@ -1,63 +1,69 @@
 local M = {}
 
 function M.get_test_methods()
-  local bufnr = vim.api.nvim_get_current_buf()
-  local parser = vim.treesitter.get_parser(bufnr, "java")
-  if not parser then
-    return {}
-  end
+	local bufnr = vim.api.nvim_get_current_buf()
+	local parser = vim.treesitter.get_parser(bufnr, "java")
+	if not parser then
+		return {}
+	end
 
-  local tree = parser:parse()[1]
-  local root = tree:root()
-  local tests = {}
+	local tree = parser:parse()[1]
+	local root = tree:root()
+	local tests = {}
 
-  local query = vim.treesitter.query.parse("java", [[
+	local query = vim.treesitter.query.parse(
+		"java",
+		[[
     (method_declaration
       (modifiers
         (marker_annotation
-          name: (identifier) @annotation (#eq? @annotation "Test")))
+          name: (identifier) @annotation (#match? @annotation "^(Test|ArchTest)$")))
       name: (identifier) @method.name) @method
-  ]])
+  ]]
+	)
 
-  for id, node in query:iter_captures(root, bufnr, 0, -1) do
-    local name = query.captures[id]
-    if name == "method.name" then
-      local method_name = vim.treesitter.get_node_text(node, bufnr)
-      local start_row, _, _, _ = node:range()
-      table.insert(tests, {
-        name = method_name,
-        line = start_row + 1,
-        type = "method"
-      })
-    end
-  end
+	for id, node in query:iter_captures(root, bufnr, 0, -1) do
+		local name = query.captures[id]
+		if name == "method.name" then
+			local method_name = vim.treesitter.get_node_text(node, bufnr)
+			local start_row, _, _, _ = node:range()
+			table.insert(tests, {
+				name = method_name,
+				line = start_row + 1,
+				type = "method",
+			})
+		end
+	end
 
-  return tests
+	return tests
 end
 
 function M.get_test_class()
-  local bufnr = vim.api.nvim_get_current_buf()
-  local parser = vim.treesitter.get_parser(bufnr, "java")
-  if not parser then
-    return nil
-  end
+	local bufnr = vim.api.nvim_get_current_buf()
+	local parser = vim.treesitter.get_parser(bufnr, "java")
+	if not parser then
+		return nil
+	end
 
-  local tree = parser:parse()[1]
-  local root = tree:root()
+	local tree = parser:parse()[1]
+	local root = tree:root()
 
-  local query = vim.treesitter.query.parse("java", [[
+	local query = vim.treesitter.query.parse(
+		"java",
+		[[
     (class_declaration
       name: (identifier) @class.name)
-  ]])
+  ]]
+	)
 
-  for id, node in query:iter_captures(root, bufnr, 0, -1) do
-    local name = query.captures[id]
-    if name == "class.name" then
-      return vim.treesitter.get_node_text(node, bufnr)
-    end
-  end
+	for id, node in query:iter_captures(root, bufnr, 0, -1) do
+		local name = query.captures[id]
+		if name == "class.name" then
+			return vim.treesitter.get_node_text(node, bufnr)
+		end
+	end
 
-  return nil
+	return nil
 end
 
 return M
