@@ -28,7 +28,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 {
-  'jflavoie/maven.test.nvim',
+  'jf-lavoie/maven.test.nvim',
   dependencies = { 'nvim-treesitter/nvim-treesitter' },
   config = function()
     require('maven-test').setup({
