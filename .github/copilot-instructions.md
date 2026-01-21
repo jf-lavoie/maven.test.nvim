@@ -35,6 +35,17 @@ The custom user commands should exists only when in a Java file.
 
 The plugin should support tests that are annotated with @Test and @ArchTest annotations.
 
+The plugin displays the command that is going to be executed in the picker. The picker display 2 areas. The method and classes on the left and the command that will be executed if the given line is selected.
+
+<!---->
+<!-- ## Feature: edit commands -->
+<!---->
+<!-- This feature allows the users to edit their command they want to run.  -->
+<!-- The plugin provide defaults commands to execute the tests. But the users should be able to edit those commands. -->
+<!-- The edited commands are saved in $HOME/.local/share/nvim/maven.nvin.test/<project-name>/<function name>.custom -->
+<!-- on opening the app, the custom commands are loaded into the plugin. -->
+<!---->
+<!---->
 
 
 ### Future improvements
