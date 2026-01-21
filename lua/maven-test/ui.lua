@@ -7,18 +7,19 @@ local preview_winid = nil
 
 local function create_floating_window()
 	local config = require("maven-test").config
-	local total_width = math.floor(vim.o.columns * config.floating_window.width)
-	local width = math.floor(total_width / 2) - 1
-	local height = math.floor(vim.o.lines * config.floating_window.height)
-	local row = math.floor((vim.o.lines - height) / 2)
-	local col = math.floor((vim.o.columns - total_width) / 2)
+	local width = math.floor(vim.o.columns * config.floating_window.width)
+	local total_height = math.floor(vim.o.lines * config.floating_window.height)
+	local height1 = math.floor(total_height * 2 / 3)
+	local height2 = total_height - height1 - 2
+	local row = math.floor((vim.o.lines - total_height) / 2)
+	local col = math.floor((vim.o.columns - width) / 2)
 
-	-- Left window (test selector)
+	-- Top window (test selector)
 	local buf1 = vim.api.nvim_create_buf(false, true)
 	local win1 = vim.api.nvim_open_win(buf1, true, {
 		relative = "editor",
 		width = width,
-		height = height,
+		height = height1,
 		row = row,
 		col = col,
 		style = "minimal",
@@ -28,20 +29,23 @@ local function create_floating_window()
 	vim.api.nvim_buf_set_option(buf1, "bufhidden", "wipe")
 	vim.api.nvim_buf_set_option(buf1, "filetype", "maven-test")
 
-	-- Right window (command preview)
+	-- Bottom window (command preview)
 	local buf2 = vim.api.nvim_create_buf(false, true)
 	local win2 = vim.api.nvim_open_win(buf2, false, {
 		relative = "editor",
 		width = width,
-		height = height,
-		row = row,
-		col = col + width + 2,
+		height = height2,
+		row = row + height1 + 2,
+		col = col,
 		style = "minimal",
 		border = config.floating_window.border,
 	})
 
 	vim.api.nvim_buf_set_option(buf2, "bufhidden", "wipe")
 	vim.api.nvim_buf_set_option(buf2, "filetype", "maven-test")
+
+	vim.api.nvim_win_set_option(win2, "wrap", true)
+	vim.api.nvim_win_set_option(win2, "linebreak", true)
 
 	return buf1, win1, buf2, win2
 end
@@ -103,7 +107,7 @@ local function update_preview(tests, class_name, package_name, debug)
 		end
 	end
 
-	local preview_lines = { "Command to execute:", "", cmd }
+	local preview_lines = { "$ " .. cmd }
 	vim.api.nvim_buf_set_option(preview_bufnr, "modifiable", true)
 	vim.api.nvim_buf_set_lines(preview_bufnr, 0, -1, false, preview_lines)
 	vim.api.nvim_buf_set_option(preview_bufnr, "modifiable", false)

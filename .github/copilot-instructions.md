@@ -35,7 +35,7 @@ The custom user commands should exists only when in a Java file.
 
 The plugin should support tests that are annotated with @Test and @ArchTest annotations.
 
-The plugin displays the command that is going to be executed in the picker. The picker display 2 areas. The method and classes on the left and the command that will be executed if the given line is selected.
+The plugin displays the command that is going to be executed in the picker. The picker display 2 areas. The method and classes on the top and the command that will be executed if the given line is selected in the bottom area.
 
 <!---->
 <!-- ## Feature: edit commands -->

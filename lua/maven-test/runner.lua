@@ -27,7 +27,8 @@ local function run_maven_test(test_spec, debug)
 
 	-- Open a new terminal split
 	vim.cmd("botright split | enew")
-	vim.fn.jobstart(cmd, { term = true })
+	local lCmd = 'echo "$ ' .. cmd .. '" && ' .. cmd
+	vim.fn.jobstart(lCmd, { term = true })
 	vim.cmd("startinsert")
 end
 
