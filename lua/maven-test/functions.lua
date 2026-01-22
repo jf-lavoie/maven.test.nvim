@@ -1,26 +1,52 @@
 local M = {}
+
+local store = require("maven-test.store")
+
+local RUN_ALL_KEY = "run_all"
+local RUN_CLASS_KEY = "run_class"
+local RUN_METHOD_KEY = "run_method"
+local RUN_ALL_DEBUG_KEY = "run_all_debug"
+local RUN_CLASS_DEBUG_KEY = "run_class_debug"
+local RUN_METHOD_DEBUG_KEY = "run_method_debug"
+
+function M.register(options)
+	store.add_to_store(RUN_ALL_KEY, options.maven_command .. " test")
+	store.add_to_store(RUN_ALL_KEY, "echo second command")
+	store.add_to_store(RUN_CLASS_KEY, options.maven_command .. " test -Dtest=%s")
+	store.add_to_store(RUN_METHOD_KEY, options.maven_command .. " test -Dtest=%s")
+	store.add_to_store(RUN_ALL_DEBUG_KEY, options.maven_command .. " test -Dmaven.surefire.debug")
+	store.add_to_store(RUN_CLASS_DEBUG_KEY, options.maven_command .. " test -Dtest=%s -Dmaven.surefire.debug")
+	store.add_to_store(RUN_METHOD_DEBUG_KEY, options.maven_command .. " test -Dtest=%s -Dmaven.surefire.debug")
+end
+
 function M.run_test()
-	require("maven-test.ui").show_test_selector(false)
+	local cmd = store.first(RUN_METHOD_KEY)
+	require("maven-test.ui").show_test_selector(cmd)
 end
 
 function M.run_test_class()
-	require("maven-test.runner").run_test_class(false)
+	local cmd = store.first(RUN_CLASS_KEY)
+	require("maven-test.runner").run_test_class(cmd)
 end
 
 function M.run_all_tests()
-	require("maven-test.runner").run_all_tests(false)
+	local cmd = store.first(RUN_ALL_KEY)
+	require("maven-test.runner").run_all_tests(cmd)
 end
 
 function M.run_test_debug()
-	require("maven-test.ui").show_test_selector(true)
+	local cmd = store.first(RUN_METHOD_DEBUG_KEY)
+	require("maven-test.ui").show_test_selector(cmd)
 end
 
 function M.run_test_class_debug()
-	require("maven-test.runner").run_test_class(true)
+	local cmd = store.first(RUN_CLASS_DEBUG_KEY)
+	require("maven-test.runner").run_test_class(cmd)
 end
 
 function M.run_all_tests_debug()
-	require("maven-test.runner").run_all_tests(true)
+	local cmd = store.first(RUN_ALL_DEBUG_KEY)
+	require("maven-test.runner").run_all_tests(cmd)
 end
 
 return M

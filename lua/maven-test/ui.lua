@@ -77,33 +77,28 @@ local function get_package_name()
 	return nil
 end
 
-local function get_maven_command(class_name, package_name, method_name, debug)
-	local config = require("maven-test").config
-	local cmd = config.maven_command .. " test "
-
+local function get_maven_command(class_name, package_name, method_name, command)
 	if method_name then
-		cmd = cmd .. "-Dtest=" .. package_name .. "." .. class_name .. "#" .. method_name
-	elseif class_name then
-		cmd = cmd .. "-Dtest=" .. package_name .. "." .. class_name
+		return string.format(command, package_name .. "." .. class_name .. "#" .. method_name)
 	end
 
-	if debug then
-		cmd = cmd .. " -Dmaven.surefire.debug"
+	if class_name then
+		return string.format(command, package_name .. "." .. class_name)
 	end
 
-	return cmd
+	return ""
 end
 
-local function update_preview(tests, class_name, package_name, debug)
+local function update_preview(tests, class_name, package_name, command)
 	local line = vim.api.nvim_win_get_cursor(popup_winid)[1]
-	local cmd = ""
 
+	local cmd = ""
 	if class_name and line == 3 then
-		cmd = get_maven_command(class_name, package_name, nil, debug)
+		cmd = get_maven_command(class_name, package_name, nil, command)
 	elseif line > (class_name and 4 or 2) then
 		local test_idx = line - (class_name and 4 or 2)
 		if tests[test_idx] then
-			cmd = get_maven_command(class_name, package_name, tests[test_idx].name, debug)
+			cmd = get_maven_command(class_name, package_name, tests[test_idx].name, command)
 		end
 	end
 
@@ -113,7 +108,7 @@ local function update_preview(tests, class_name, package_name, debug)
 	vim.api.nvim_buf_set_option(preview_bufnr, "modifiable", false)
 end
 
-function M.show_test_selector(debug)
+function M.show_test_selector(command)
 	local parser = require("maven-test.parser")
 	local runner = require("maven-test.runner")
 
@@ -147,7 +142,7 @@ function M.show_test_selector(debug)
 	vim.api.nvim_buf_set_option(popup_bufnr, "modifiable", false)
 
 	local function on_cursor_move()
-		update_preview(tests, class_name, package_name, debug)
+		update_preview(tests, class_name, package_name, command)
 	end
 
 	local function on_select()
@@ -155,11 +150,11 @@ function M.show_test_selector(debug)
 		close_popup()
 
 		if class_name and line == 3 then
-			runner.run_test_class(debug)
+			runner.run_test_class(command)
 		elseif line > (class_name and 4 or 2) then
 			local test_idx = line - (class_name and 4 or 2)
 			if tests[test_idx] then
-				runner.run_test_method(tests[test_idx].name, debug)
+				runner.run_test_method(tests[test_idx].name, command)
 			end
 		end
 	end
@@ -174,7 +169,7 @@ function M.show_test_selector(debug)
 	})
 
 	vim.api.nvim_win_set_cursor(popup_winid, { class_name and 3 or 3, 0 })
-	update_preview(tests, class_name, package_name, debug)
+	update_preview(tests, class_name, package_name, command)
 end
 
 return M

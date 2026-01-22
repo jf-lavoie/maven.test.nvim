@@ -57,3 +57,42 @@ The plugin displays the command that is going to be executed in the picker. The 
 
 
 
+
+
+## commands store
+
+Users are able to choose and edit their commands. 
+
+
+The commands store is a store to save commands. The key is the command name and the value is all the possible values the users have created for this command.
+
+It's API is:
+
+-- add a new value to the key. If key is non existent, an array with a single item (the value) is created.
+-- if the key exists, the values is inserted in the array at the first position if it does not already exists.
+add_to_store(key, value) 
+
+-- removes the value in the key's array
+remove_from_store(key, value)
+
+-- returns the first element of the array at key
+first(key)
+
+-- returns the array of values at key. If key does not exists, return an empty array
+get(key)
+
+
+### store persistence
+
+store persistence is another component that saves the store to the disk and load it from the disk. 
+
+It's api is:
+
+-- constructor takes a path to where data should be saved
+new(path)
+
+-- saves the store to the disk
+save(store)
+
+-- loads the store from disk and returns a store
+load()
