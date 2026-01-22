@@ -11,42 +11,42 @@ local RUN_METHOD_DEBUG_KEY = "run_method_debug"
 
 function M.register(options)
 	store.add_to_store(RUN_ALL_KEY, options.maven_command .. " test")
-	store.add_to_store(RUN_ALL_KEY, "echo second command")
 	store.add_to_store(RUN_CLASS_KEY, options.maven_command .. " test -Dtest=%s")
 	store.add_to_store(RUN_METHOD_KEY, options.maven_command .. " test -Dtest=%s")
+	-- store.add_to_store(RUN_METHOD_KEY, "echo second command")
 	store.add_to_store(RUN_ALL_DEBUG_KEY, options.maven_command .. " test -Dmaven.surefire.debug")
 	store.add_to_store(RUN_CLASS_DEBUG_KEY, options.maven_command .. " test -Dtest=%s -Dmaven.surefire.debug")
 	store.add_to_store(RUN_METHOD_DEBUG_KEY, options.maven_command .. " test -Dtest=%s -Dmaven.surefire.debug")
 end
 
 function M.run_test()
-	local cmd = store.first(RUN_METHOD_KEY)
-	require("maven-test.ui").show_test_selector(cmd)
+	local cmds = store.get(RUN_METHOD_KEY)
+	require("maven-test.ui").show_test_selector(cmds)
 end
 
 function M.run_test_class()
-	local cmd = store.first(RUN_CLASS_KEY)
-	require("maven-test.runner").run_test_class(cmd)
+	local cmds = store.first(RUN_CLASS_KEY)
+	require("maven-test.runner").run_test_class(cmds)
 end
 
 function M.run_all_tests()
-	local cmd = store.first(RUN_ALL_KEY)
-	require("maven-test.runner").run_all_tests(cmd)
+	local cmds = store.first(RUN_ALL_KEY)
+	require("maven-test.runner").run_all_tests(cmds)
 end
 
 function M.run_test_debug()
-	local cmd = store.first(RUN_METHOD_DEBUG_KEY)
-	require("maven-test.ui").show_test_selector(cmd)
+	local cmds = store.get(RUN_METHOD_DEBUG_KEY)
+	require("maven-test.ui").show_test_selector(cmds)
 end
 
 function M.run_test_class_debug()
-	local cmd = store.first(RUN_CLASS_DEBUG_KEY)
-	require("maven-test.runner").run_test_class(cmd)
+	local cmds = store.first(RUN_CLASS_DEBUG_KEY)
+	require("maven-test.runner").run_test_class(cmds)
 end
 
 function M.run_all_tests_debug()
-	local cmd = store.first(RUN_ALL_DEBUG_KEY)
-	require("maven-test.runner").run_all_tests(cmd)
+	local cmds = store.first(RUN_ALL_DEBUG_KEY)
+	require("maven-test.runner").run_all_tests(cmds)
 end
 
 return M
