@@ -58,4 +58,9 @@ function M.get(key)
 	return store[key] or {}
 end
 
+function M.empty_store()
+	store = {}
+	save_store()
+end
+
 return M

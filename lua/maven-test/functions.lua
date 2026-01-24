@@ -13,7 +13,6 @@ function M.register(options)
 	store.add_to_store(RUN_ALL_KEY, options.maven_command .. " test")
 	store.add_to_store(RUN_CLASS_KEY, options.maven_command .. " test -Dtest=%s")
 	store.add_to_store(RUN_METHOD_KEY, options.maven_command .. " test -Dtest=%s")
-	-- store.add_to_store(RUN_METHOD_KEY, "echo second command")
 	store.add_to_store(RUN_ALL_DEBUG_KEY, options.maven_command .. " test -Dmaven.surefire.debug")
 	store.add_to_store(RUN_CLASS_DEBUG_KEY, options.maven_command .. " test -Dtest=%s -Dmaven.surefire.debug")
 	store.add_to_store(RUN_METHOD_DEBUG_KEY, options.maven_command .. " test -Dtest=%s -Dmaven.surefire.debug")
@@ -47,6 +46,11 @@ end
 function M.run_all_tests_debug()
 	local cmds = store.first(RUN_ALL_DEBUG_KEY)
 	require("maven-test.runner").run_all_tests(cmds)
+end
+
+function M.restore_store()
+	store.empty_store()
+	M.register(require("maven-test").config)
 end
 
 return M

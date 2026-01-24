@@ -110,7 +110,13 @@ function M.get_test_class()
 	for id, node in query:iter_captures(root, bufnr, 0, -1) do
 		local name = query.captures[id]
 		if name == "class.name" then
-			return vim.treesitter.get_node_text(node, bufnr)
+			local class_name = vim.treesitter.get_node_text(node, bufnr)
+			local start_row, _, _, _ = node:range()
+			return {
+				name = class_name,
+				line = start_row + 1,
+				type = "class",
+			}
 		end
 	end
 

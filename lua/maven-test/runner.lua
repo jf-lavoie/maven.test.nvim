@@ -14,16 +14,8 @@ local function get_package_name()
 	return nil
 end
 
-local function run_maven_test(command)
-	-- local config = require("maven-test").config
-	-- local cmd = config.maven_command .. " test " .. test_spec
-	--
-	-- if debug then
-	-- 	cmd = cmd .. " -Dmaven.surefire.debug"
-	-- 	vim.notify("Running in DEBUG mode (port " .. config.debug_port .. "): " .. cmd, vim.log.levels.INFO)
-	-- else
+function M.run_maven_test(command)
 	vim.notify("Running: " .. command, vim.log.levels.INFO)
-	-- end
 
 	-- Open a new terminal split
 	vim.cmd("botright split | enew")
@@ -43,7 +35,7 @@ function M.run_test_method(method_name, command)
 
 	local fully_qualified = package_name .. "." .. class_name .. "#" .. method_name
 	local localCommand = string.format(command, fully_qualified)
-	run_maven_test(localCommand)
+	M.run_maven_test(localCommand)
 end
 
 function M.run_test_class(command)
@@ -57,11 +49,11 @@ function M.run_test_class(command)
 
 	local fully_qualified = package_name .. "." .. class_name
 	local localCommand = string.format(command, fully_qualified)
-	run_maven_test(localCommand)
+	M.run_maven_test(localCommand)
 end
 
 function M.run_all_tests(command)
-	run_maven_test(command)
+	M.run_maven_test(command)
 end
 
 return M

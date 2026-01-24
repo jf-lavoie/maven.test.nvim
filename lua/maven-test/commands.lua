@@ -26,6 +26,10 @@ function M.register()
 	vim.api.nvim_create_user_command("MavenTestAllDebug", function()
 		functions.run_all_tests_debug()
 	end, { desc = "Run all tests (debug mode)" })
+
+	vim.api.nvim_create_user_command("MavenTestRestoreCommandsStore", function()
+		functions.restore_store()
+	end, { desc = "Restore stored commands" })
 end
 
 return M
