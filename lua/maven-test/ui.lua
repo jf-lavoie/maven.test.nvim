@@ -9,6 +9,8 @@ local row1 = math.floor((vim.o.lines - total_height) / 2)
 local row2 = row1 + height1 + 2
 local col = math.floor((vim.o.columns - width) / 2)
 
+local show_command_editor, _show_test_selector
+
 local FullyQualifiedName = {}
 FullyQualifiedName.__index = FullyQualifiedName
 
@@ -22,11 +24,27 @@ end
 local CommandInfo = {}
 CommandInfo.__index = CommandInfo
 
-function CommandInfo.new(fullyQualifiedName, commands)
+function CommandInfo.new(fullyQualifiedName, commandDetails)
 	local self = setmetatable({}, FullyQualifiedName)
 	self.fqn = fullyQualifiedName
-	self.commands = commands
+	self.commands = commandDetails
 	return self
+end
+
+local CommandDetail = {}
+CommandDetail.__index = CommandDetail
+
+function CommandDetail.new(cmd, format)
+	local self = setmetatable({}, CommandDetail)
+	self.cmd = cmd
+	self.format = format
+	return self
+end
+
+function CommandDetail:toPreviewString()
+	-- return self.cmd
+	-- return self.cmd:gsub("\n", "\\n"):gsub("\r", "\\r"):gsub("\t", "\\t"):gsub("\\", "\\\\")
+	return self.cmd:gsub("\n", "\\n"):gsub("\r", "\\r"):gsub("\t", "\\t")
 end
 
 local function create_floating_window(wHeight, wWidth, wRow, wCol, enter)
@@ -47,11 +65,25 @@ local function create_floating_window(wHeight, wWidth, wRow, wCol, enter)
 	return buf, win
 end
 
+local function get_command(fqnCommands, actionsWin, commandsWin)
+	local line = vim.api.nvim_win_get_cursor(actionsWin.win)[1]
+	local fqn = fqnCommands[line]
+
+	local commands = fqn.commands
+
+	local commandIndex = vim.api.nvim_win_get_cursor(commandsWin.win)[1]
+
+	local cmd = commands[commandIndex]
+
+	return cmd
+end
+
 local function delete_command_from_store(fqnCommands, actionsWin, commandsWin, fctDeleteFromStore)
 	local line = vim.api.nvim_win_get_cursor(actionsWin.win)[1]
 	local fqn = fqnCommands[line]
 
 	local commands = fqn.commands
+
 	if #commands == 1 then
 		vim.notify("Only 1 command left. Will not delete.", vim.log.levels.WARN)
 		return
@@ -60,6 +92,11 @@ local function delete_command_from_store(fqnCommands, actionsWin, commandsWin, f
 	local commandIndex = vim.api.nvim_win_get_cursor(commandsWin.win)[1]
 
 	local cmd = commands[commandIndex]
+
+	if not cmd then
+		vim.notify("No command selected to delete", vim.log.levels.ERROR)
+		return
+	end
 
 	fctDeleteFromStore(cmd.format)
 end
@@ -88,6 +125,7 @@ end
 local function close_popup(theWin)
 	if theWin and theWin.win and vim.api.nvim_win_is_valid(theWin.win) then
 		vim.api.nvim_win_close(theWin.win, true)
+		-- vim.api.nvim_buf_delete(theWin.buf, { force = true })
 	end
 end
 
@@ -95,11 +133,12 @@ local function onBufLeave(actionsWin, commandsWin)
 	return function()
 		local win_id = vim.api.nvim_get_current_win()
 		if win_id == actionsWin.win or win_id == commandsWin.win then
-			return
+			return false
 		end
 
 		close_popup(actionsWin)
 		close_popup(commandsWin)
+		return true
 	end
 end
 
@@ -123,11 +162,16 @@ end
 
 local function update_preview(actionsWin, commandsWin, fqnCommands)
 	local line = vim.api.nvim_win_get_cursor(actionsWin.win)[1]
-	local fqn = fqnCommands[line]
 
 	local cmds = {}
-	for index, value in ipairs(fqn.commands) do
-		table.insert(cmds, index, value.cmd)
+
+	if line <= #fqnCommands then
+		local fqn = fqnCommands[line]
+
+		for index, value in ipairs(fqn.commands) do
+			local t = value:toPreviewString()
+			table.insert(cmds, index, t)
+		end
 	end
 
 	local content_lines = #cmds
@@ -183,11 +227,8 @@ local function create_fully_qualidfied_commands(fullyQualifiedNames, commands)
 	local fqnCommands = {}
 	for _, fqn in ipairs(fullyQualifiedNames) do
 		local cmds = {}
-		for _, cmd in ipairs(commands) do
-			table.insert(cmds, {
-				cmd = get_maven_command(cmd, fqn.text),
-				format = cmd,
-			})
+		for _, cmdFormat in ipairs(commands) do
+			table.insert(cmds, CommandDetail.new(get_maven_command(cmdFormat, fqn.text), cmdFormat))
 		end
 
 		table.insert(fqnCommands, CommandInfo.new(fqn, cmds))
@@ -195,7 +236,49 @@ local function create_fully_qualidfied_commands(fullyQualifiedNames, commands)
 	return fqnCommands
 end
 
-function M.show_test_selector(getCommands, fctDeleteFromStore)
+show_command_editor = function(cmd, getCommands, fctDeleteFromStore, fctAddToStore)
+	local buf, win =
+		create_floating_window(10, 160, math.floor((vim.o.lines - 10) / 2), math.floor((vim.o.columns - 160) / 2), true)
+
+	local bufWin = {
+		buf = buf,
+		win = win,
+	}
+
+	vim.keymap.set("n", "<Esc>", function()
+		close_popup(bufWin)
+	end, { buffer = buf, nowait = true })
+	vim.keymap.set("n", "q", function()
+		close_popup(bufWin)
+	end, { buffer = buf, nowait = true })
+
+	vim.keymap.set("n", "<CR>", function()
+		local text = vim.api.nvim_buf_get_lines(buf, 0, -1, true)
+		close_popup(bufWin)
+
+		local joined_text = table.concat(text, "\n"):match("^%s*(.-)%s*$")
+		fctAddToStore(joined_text)
+
+		_show_test_selector(getCommands, fctDeleteFromStore, fctAddToStore)
+	end, { buffer = buf, nowait = true })
+
+	vim.api.nvim_create_autocmd("BufLeave", {
+		buffer = buf,
+		callback = function()
+			close_popup(bufWin)
+		end,
+	})
+
+	local splittedLines = {}
+	for line in cmd.format:gmatch("[^\n]+") do
+		table.insert(splittedLines, line)
+	end
+
+	vim.api.nvim_buf_set_lines(buf, 0, 1, true, splittedLines)
+	vim.api.nvim_buf_set_option(buf, "modifiable", true)
+end
+
+_show_test_selector = function(getCommands, fctDeleteFromStore, fctAddToStore)
 	local parser = require("maven-test.parser")
 	local runner = require("maven-test.runner")
 
@@ -229,18 +312,15 @@ function M.show_test_selector(getCommands, fctDeleteFromStore)
 	end
 
 	local function on_select()
-		local line = vim.api.nvim_win_get_cursor(actionsWin.win)[1]
-		local fqn = fqnCommands[line]
-		if not fqn then
-			vim.notify("No action selected", vim.log.levels.ERROR)
+		local cmd = get_command(fqnCommands, actionsWin, commandsWin)
+		if not cmd then
+			vim.notify("No command selected to run", vim.log.levels.ERROR)
 			return
 		end
 
-		local commandLine = vim.api.nvim_win_get_cursor(commandsWin.win)[1]
-
 		close_popup(actionsWin)
 		close_popup(commandsWin)
-		runner.run_maven_test(fqn.commands[commandLine].cmd)
+		runner.run_maven_test(cmd.cmd)
 	end
 
 	vim.keymap.set("n", "<CR>", on_select, { buffer = actionsWin.buf, nowait = true })
@@ -279,29 +359,15 @@ function M.show_test_selector(getCommands, fctDeleteFromStore)
 		callback = on_cursor_move,
 	})
 
-	vim.api.nvim_create_autocmd("BufLeave", {
-		buffer = actionsWin.buf,
-		callback = onBufLeave(actionsWin, commandsWin),
+	vim.api.nvim_create_autocmd("WinEnter", {
+		-- buffer = actionsWin.buf,
+		group = vim.api.nvim_create_augroup("MavenTestUIWinEnter", { clear = true }),
+		callback = function()
+			if onBufLeave(actionsWin, commandsWin)() then
+				vim.api.nvim_del_augroup_by_name("MavenTestUIWinEnter")
+			end
+		end,
 	})
-
-	vim.api.nvim_create_autocmd("BufLeave", {
-		buffer = commandsWin.buf,
-		callback = onBufLeave(actionsWin, commandsWin),
-	})
-
-	vim.keymap.set("n", "m", function()
-		vim.notify("Modify command not implemented yet", vim.log.levels.INFO)
-
-		-- close_popup(actionsWin)
-		-- close_popup(commandsWin)
-		-- local buf, win = create_floating_window(total_height, width, vim.o.lines, vim.o.columns, true)
-	end, { buffer = commandsWin.buf, nowait = true })
-
-	vim.keymap.set("n", "d", function()
-		delete_command_from_store(fqnCommands, actionsWin, commandsWin, fctDeleteFromStore)
-		fqnCommands = create_fully_qualidfied_commands(fullyQualifiedNames, commands)
-		update_preview(actionsWin, commandsWin, fqnCommands)
-	end, { buffer = commandsWin.buf, nowait = true })
 
 	vim.keymap.set("n", "<CR>", on_select, { buffer = commandsWin.buf, nowait = true })
 
@@ -309,6 +375,30 @@ function M.show_test_selector(getCommands, fctDeleteFromStore)
 
 	vim.api.nvim_win_set_cursor(actionsWin.win, { 1, 0 })
 	update_preview(actionsWin, commandsWin, fqnCommands)
+
+	vim.keymap.set("n", "m", function()
+		local cmd = get_command(fqnCommands, actionsWin, commandsWin)
+
+		if not cmd then
+			vim.notify("No command selected to modify", vim.log.levels.ERROR)
+			return
+		end
+
+		close_popup(actionsWin)
+		close_popup(commandsWin)
+
+		show_command_editor(cmd, getCommands, fctDeleteFromStore, fctAddToStore)
+	end, { buffer = commandsWin.buf, nowait = true })
+
+	vim.keymap.set("n", "d", function()
+		delete_command_from_store(fqnCommands, actionsWin, commandsWin, fctDeleteFromStore)
+		fqnCommands = create_fully_qualidfied_commands(fullyQualifiedNames, commands)
+		update_preview(actionsWin, commandsWin, fqnCommands)
+	end, { buffer = commandsWin.buf, nowait = true })
+end
+
+function M.show_test_selector(getCommands, fctDeleteFromStore, fctAddToStore)
+	_show_test_selector(getCommands, fctDeleteFromStore, fctAddToStore)
 end
 
 return M

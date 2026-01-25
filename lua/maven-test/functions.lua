@@ -12,7 +12,6 @@ local RUN_METHOD_DEBUG_KEY = "run_method_debug"
 function M.register(options)
 	store.add_to_store(RUN_ALL_KEY, options.maven_command .. " test")
 	store.add_to_store(RUN_CLASS_KEY, options.maven_command .. " test -Dtest=%s")
-	store.add_to_store(RUN_METHOD_KEY, "echo 'test'")
 	store.add_to_store(RUN_METHOD_KEY, options.maven_command .. " test -Dtest=%s")
 	store.add_to_store(RUN_ALL_DEBUG_KEY, options.maven_command .. " test -Dmaven.surefire.debug")
 	store.add_to_store(RUN_CLASS_DEBUG_KEY, options.maven_command .. " test -Dtest=%s -Dmaven.surefire.debug")
@@ -24,6 +23,8 @@ function M.run_test()
 		return store.get(RUN_METHOD_KEY)
 	end, function(value)
 		store.remove_from_store(RUN_METHOD_KEY, value)
+	end, function(value)
+		store.add_to_store(RUN_METHOD_KEY, value)
 	end)
 end
 
