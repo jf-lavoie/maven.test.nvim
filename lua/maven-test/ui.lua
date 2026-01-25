@@ -47,7 +47,7 @@ function CommandDetail:toPreviewString()
 	return self.cmd:gsub("\n", "\\n"):gsub("\r", "\\r"):gsub("\t", "\\t")
 end
 
-local function create_floating_window(wHeight, wWidth, wRow, wCol, enter)
+local function create_floating_window(wHeight, wWidth, wRow, wCol, enter, filetype)
 	local buf = vim.api.nvim_create_buf(false, true)
 	local win = vim.api.nvim_open_win(buf, enter, {
 		relative = "editor",
@@ -60,7 +60,7 @@ local function create_floating_window(wHeight, wWidth, wRow, wCol, enter)
 	})
 
 	vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
-	vim.api.nvim_buf_set_option(buf, "filetype", "maven-test")
+	vim.api.nvim_buf_set_option(buf, "filetype", filetype)
 
 	return buf, win
 end
@@ -102,7 +102,7 @@ local function delete_command_from_store(fqnCommands, actionsWin, commandsWin, f
 end
 
 local function create_action_window(enter)
-	local buf, win = create_floating_window(height1, width, row1, col, enter)
+	local buf, win = create_floating_window(height1, width, row1, col, enter, "java")
 	local actionWin = {
 		buf = buf,
 		win = win,
@@ -112,7 +112,7 @@ local function create_action_window(enter)
 	return actionWin
 end
 local function create_commands_window(enter)
-	local buf, win = create_floating_window(height2, width, row2, col, enter)
+	local buf, win = create_floating_window(height2, width, row2, col, enter, "sh")
 	local commandsWin = {
 		buf = buf,
 		win = win,
@@ -174,18 +174,16 @@ local function update_preview(actionsWin, commandsWin, fqnCommands)
 		end
 	end
 
-	local content_lines = #cmds
-	local available_height = commandsWin.height - 1 -- -1 for footer
-	for _ = content_lines + 1, available_height do
-		table.insert(cmds, "")
-	end
-
-	table.insert(cmds, "<CR>, <space> Run command | <m> modify command | <d> delete command | q: Quit")
-
 	local preview_lines = cmds
 	vim.api.nvim_buf_set_option(commandsWin.buf, "modifiable", true)
 	vim.api.nvim_buf_set_lines(commandsWin.buf, 0, -1, false, preview_lines)
 	vim.api.nvim_buf_set_option(commandsWin.buf, "modifiable", false)
+
+	vim.api.nvim_win_set_option(
+		commandsWin.win,
+		"winbar",
+		"%#StatusLine#<CR>, <space> Run command | <m> modify command | <d> delete command | q: Quit"
+	)
 end
 
 local function show_fully_qualified_names(theWin, fqnCommandsInfo)
@@ -195,16 +193,18 @@ local function show_fully_qualified_names(theWin, fqnCommandsInfo)
 		table.insert(lines, fqn.fqn.text .. " (line " .. fqn.fqn.line .. ")")
 	end
 
-	local content_lines = #lines
-	local available_height = theWin.height - 1 -- -1 for footer
-	for _ = content_lines + 1, available_height do
-		table.insert(lines, "")
-	end
-
-	table.insert(lines, "<CR> Run test | <space> Select command | q: Quit")
-
+	vim.api.nvim_buf_set_option(theWin.buf, "modifiable", true)
 	vim.api.nvim_buf_set_lines(theWin.buf, 0, -1, false, lines)
 	vim.api.nvim_buf_set_option(theWin.buf, "modifiable", false)
+
+	local ns_id = vim.api.nvim_create_namespace("fqn_highlight")
+	for i, fqn in ipairs(fqnCommandsInfo) do
+		local line_idx = i - 1 -- 0-based
+		local text = fqn.fqn.text
+		-- Highlight (line XX) part
+		local line_info_start = text:len() + 1 -- After the FQN text, includes    space
+		vim.api.nvim_buf_add_highlight(theWin.buf, ns_id, "Comment", line_idx, line_info_start, -1)
+	end
 end
 
 --- Creates a list of test actions from package, class, and test methods
@@ -305,8 +305,6 @@ _show_test_selector = function(getCommands, fctDeleteFromStore, fctAddToStore)
 	local actionsWin = create_action_window(true)
 	local commandsWin = create_commands_window(false)
 
-	show_fully_qualified_names(actionsWin, fqnCommands)
-
 	local function on_cursor_move()
 		update_preview(actionsWin, commandsWin, fqnCommands)
 	end
@@ -373,6 +371,7 @@ _show_test_selector = function(getCommands, fctDeleteFromStore, fctAddToStore)
 
 	vim.keymap.set("n", "<space>", on_select, { buffer = commandsWin.buf, nowait = true })
 
+	show_fully_qualified_names(actionsWin, fqnCommands)
 	vim.api.nvim_win_set_cursor(actionsWin.win, { 1, 0 })
 	update_preview(actionsWin, commandsWin, fqnCommands)
 
