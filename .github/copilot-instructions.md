@@ -175,6 +175,59 @@ Users can navigate the list using `j/k` or arrow keys, press `<Enter>` to run th
 
 The top section contains a text to invite user to view the available commands (j/k, <Enter>, q and <Esc>).
 
+## Code Design Principles
+
+### Architecture
+- **Separation of Concerns**: Each module has a single responsibility
+  - `parser.lua`: Treesitter integration and test detection
+  - `runner.lua`: Maven command execution
+  - `ui.lua`: User interface and interaction
+  - `store.lua`: In-memory command storage
+  - `store_persistence.lua`: Disk persistence layer
+  - `commands.lua`: Neovim command registration
+  - `functions.lua`: Business logic coordination
+  
+### Module Dependencies
+```
+init.lua → commands.lua → functions.lua → [parser.lua, runner.lua, ui.lua]
+                                        ↓
+                                    store.lua → store_persistence.lua
+```
+
+### Key Design Patterns
+- **Plug Mappings**: All keymaps use `<Plug>` mappings to allow user customization
+- **Store-First Architecture**: Commands are stored and retrieved from the store, not hard-coded
+- **Separation of Data and View**: Store manages data, UI displays it
+- **Single Terminal Strategy**: Only one test terminal split is maintained at a time
+
+## Non-Functional Requirements
+
+### Store Behavior
+- **Non-nil Guarantee**: The store always returns a non-nil value (empty table if no data exists)
+- **Uniqueness**: The store does not add an item if it is already present in the list
+- **Order Preservation**: Most recently used commands are inserted at the front of the list
+- **Persistence**: Store is automatically saved to disk after modifications
+- **Per-Project Isolation**: Each project has its own isolated store file
+
+### Keymap Requirements
+- **Plug Mappings Only**: All shortcut commands must be of type `<Plug>` to allow user override
+- **No Hard Bindings**: Default keymaps can be disabled by users
+
+### Performance
+- **Lazy Loading**: Plugin loads only when needed (via autocommands or explicit commands)
+- **Fast Parsing**: Treesitter queries are efficient and run only on current buffer
+- **Async Execution**: Maven commands run asynchronously in terminal without blocking editor
+
+### Reliability
+- **Graceful Degradation**: If treesitter parser is unavailable, commands should still work for class/all tests
+- **Error Handling**: Invalid Maven commands or missing files should display clear error messages
+- **Safe Persistence**: Store file corruption should not crash the plugin
+
+### User Experience
+- **Real-time Feedback**: Command preview updates instantly as user navigates
+- **Terminal Integration**: Maven output appears in Neovim terminal, not external window
+- **Visual Clarity**: UI clearly separates test list from command preview
+
 ## Implementation Notes
 
 - The plugin auto-initializes via `plugin/init.lua` when loaded
@@ -184,6 +237,7 @@ The top section contains a text to invite user to view the available commands (j
 - Currently, only the first command is executed, but the store supports multiple commands per key
 - Package name is extracted from the Java file's `package` declaration (first 50 lines)
 - Test class name is extracted via treesitter query for `class_declaration`
+- Store operations are idempotent - adding the same command twice has no effect
 
 ## Future Improvements
 

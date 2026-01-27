@@ -42,8 +42,6 @@ function CommandDetail.new(cmd, format)
 end
 
 function CommandDetail:toPreviewString()
-	-- return self.cmd
-	-- return self.cmd:gsub("\n", "\\n"):gsub("\r", "\\r"):gsub("\t", "\\t"):gsub("\\", "\\\\")
 	return self.cmd:gsub("\n", "\\n"):gsub("\r", "\\r"):gsub("\t", "\\t")
 end
 
@@ -182,7 +180,7 @@ local function update_preview(actionsWin, commandsWin, fqnCommands)
 	vim.api.nvim_win_set_option(
 		commandsWin.win,
 		"winbar",
-		"%#StatusLine#<CR>, <space> Run command | <m> modify command | <d> delete command | q: Quit"
+		"%#StatusLine#<CR>, <space> Run command | <m> modify command | <d> delete command | q Quit"
 	)
 end
 
@@ -190,21 +188,27 @@ local function show_fully_qualified_names(theWin, fqnCommandsInfo)
 	local lines = {}
 
 	for _, fqn in ipairs(fqnCommandsInfo) do
-		table.insert(lines, fqn.fqn.text .. " (line " .. fqn.fqn.line .. ")")
+		table.insert(lines, fqn.fqn.text .. " // line " .. fqn.fqn.line)
 	end
 
 	vim.api.nvim_buf_set_option(theWin.buf, "modifiable", true)
 	vim.api.nvim_buf_set_lines(theWin.buf, 0, -1, false, lines)
 	vim.api.nvim_buf_set_option(theWin.buf, "modifiable", false)
 
-	local ns_id = vim.api.nvim_create_namespace("fqn_highlight")
-	for i, fqn in ipairs(fqnCommandsInfo) do
-		local line_idx = i - 1 -- 0-based
-		local text = fqn.fqn.text
-		-- Highlight (line XX) part
-		local line_info_start = text:len() + 1 -- After the FQN text, includes    space
-		vim.api.nvim_buf_add_highlight(theWin.buf, ns_id, "Comment", line_idx, line_info_start, -1)
-	end
+	-- local ns_id = vim.api.nvim_create_namespace("fqn_highlight")
+	-- for i, fqn in ipairs(fqnCommandsInfo) do
+	-- 	local line_idx = i - 1 -- 0-based
+	-- 	local text = fqn.fqn.text
+	-- 	-- Highlight (line XX) part
+	-- 	local line_info_start = text:len() + 1 -- After the FQN text, includes    space
+	-- 	vim.api.nvim_buf_add_highlight(theWin.buf, ns_id, "Comment", line_idx, line_info_start, -1)
+	-- end
+
+	vim.api.nvim_win_set_option(
+		theWin.win,
+		"winbar",
+		"%#StatusLine#<CR> Run command | <space> Select command | <esc>, q Quit"
+	)
 end
 
 --- Creates a list of test actions from package, class, and test methods
@@ -352,10 +356,10 @@ _show_test_selector = function(getCommands, fctDeleteFromStore, fctAddToStore)
 		callback = on_cursor_move,
 	})
 
-	vim.api.nvim_create_autocmd("CursorMoved", {
-		buffer = actionsWin.buf,
-		callback = on_cursor_move,
-	})
+	-- vim.api.nvim_create_autocmd("CursorMoved", {
+	-- 	buffer = actionsWin.buf,
+	-- 	callback = on_cursor_move,
+	-- })
 
 	vim.api.nvim_create_autocmd("WinEnter", {
 		-- buffer = actionsWin.buf,

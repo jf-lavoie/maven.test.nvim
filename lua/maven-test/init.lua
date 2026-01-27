@@ -1,3 +1,7 @@
+if vim.g.loaded_maven_test then
+	return
+end
+
 local M = {}
 
 local function get_project_name()
@@ -23,13 +27,16 @@ M.config = {
 }
 
 function M.setup(opts)
+	if vim.g.loaded_maven_test == 1 then
+		return
+	end
+
 	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
 
-	require("maven-test.store_persistence").initialize(M.config.data_dir)
-	require("maven-test.store").load()
+	require("maven-test.store_persistence").setup(M.config.data_dir)
+	require("maven-test.commands")
 
-	require("maven-test.commands").register()
-	require("maven-test.functions").register(M.config)
+	vim.g.loaded_maven_test = 1
 end
 
 return M

@@ -9,7 +9,11 @@ local RUN_ALL_DEBUG_KEY = "run_all_debug"
 local RUN_CLASS_DEBUG_KEY = "run_class_debug"
 local RUN_METHOD_DEBUG_KEY = "run_method_debug"
 
-function M.register(options)
+local initialized = false
+
+local function _default_commands()
+	local options = require("maven-test").config
+
 	store.add_to_store(RUN_ALL_KEY, options.maven_command .. " test")
 	store.add_to_store(RUN_CLASS_KEY, options.maven_command .. " test -Dtest=%s")
 	store.add_to_store(RUN_METHOD_KEY, options.maven_command .. " test -Dtest=%s")
@@ -18,7 +22,18 @@ function M.register(options)
 	store.add_to_store(RUN_METHOD_DEBUG_KEY, options.maven_command .. " test -Dtest=%s -Dmaven.surefire.debug")
 end
 
+local function _initialize()
+	if initialized then
+		return
+	end
+
+	initialized = true
+
+	_default_commands()
+end
+
 function M.run_test()
+	_initialize()
 	require("maven-test.ui").show_test_selector(function()
 		return store.get(RUN_METHOD_KEY)
 	end, function(value)
@@ -29,33 +44,39 @@ function M.run_test()
 end
 
 function M.run_test_class()
+	_initialize()
 	local cmds = store.first(RUN_CLASS_KEY)
 	require("maven-test.runner").run_test_class(cmds)
 end
 
 function M.run_all_tests()
+	_initialize()
 	local cmds = store.first(RUN_ALL_KEY)
 	require("maven-test.runner").run_all_tests(cmds)
 end
 
 function M.run_test_debug()
+	_initialize()
 	local cmds = store.get(RUN_METHOD_DEBUG_KEY)
 	require("maven-test.ui").show_test_selector(cmds)
 end
 
 function M.run_test_class_debug()
+	_initialize()
 	local cmds = store.first(RUN_CLASS_DEBUG_KEY)
 	require("maven-test.runner").run_test_class(cmds)
 end
 
 function M.run_all_tests_debug()
+	_initialize()
 	local cmds = store.first(RUN_ALL_DEBUG_KEY)
 	require("maven-test.runner").run_all_tests(cmds)
 end
 
 function M.restore_store()
+	_initialize()
 	store.empty_store()
-	M.register(require("maven-test").config)
+	_default_commands()
 end
 
 return M

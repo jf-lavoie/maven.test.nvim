@@ -2,17 +2,28 @@ local M = {}
 
 M.data_dir = nil
 
+local initialized = false
+
 local function get_store_file()
 	return M.data_dir .. "/store.json"
 end
 
-function M.initialize(datadir)
-	M.data_dir = datadir
+local function _initialize()
+	if initialized then
+		return
+	end
+	initialized = true
 
 	vim.fn.mkdir(M.data_dir, "p")
 end
 
+function M.setup(data_dir)
+	M.data_dir = data_dir
+end
+
 function M.save(store_data)
+	_initialize()
+
 	local file = get_store_file()
 	local json = vim.fn.json_encode(store_data)
 
@@ -26,6 +37,8 @@ function M.save(store_data)
 end
 
 function M.load()
+	_initialize()
+
 	local file = get_store_file()
 
 	if vim.fn.filereadable(file) == 0 then
