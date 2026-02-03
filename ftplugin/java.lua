@@ -66,3 +66,12 @@ if vim.fn.hasmapto("<Plug>(maven-test-all-debug)") == 0 then
 		vim.tbl_extend("force", opts, { desc = "Run all tests (debug mode)" })
 	)
 end
+
+if vim.fn.hasmapto("<Plug>(maven-test-commands)") == 0 then
+	vim.keymap.set(
+		"n",
+		"<leader>Mx",
+		"<Plug>(maven-test-commands)",
+		vim.tbl_extend("force", opts, { desc = "Maven commands" })
+	)
+end
