@@ -142,7 +142,7 @@ local function update_preview(actionsWin, commandsWin, fqnCommands)
 	vim.api.nvim_win_set_option(
 		commandsWin.win,
 		"winbar",
-		"%#StatusLine#<CR>, <space> Run command | <m> modify command | <d> delete command | q Quit"
+		"%#StatusLine#<CR>, <space> Run command | <m> modify command | <d> delete command | <q> Quit"
 	)
 end
 
@@ -160,7 +160,7 @@ local function show_fully_qualified_names(theWin, fqnCommandsInfo)
 	vim.api.nvim_win_set_option(
 		theWin.win,
 		"winbar",
-		"%#StatusLine#<CR> Run command | <space> Select command | <esc>, q Quit"
+		"%#StatusLine#<CR> Run command | <space> Select command | <esc>, <q> Quit"
 	)
 end
 
@@ -194,62 +194,9 @@ local function create_fully_qualidfied_commands(fullyQualifiedNames, commands)
 end
 
 show_command_editor = function(cmd, getCommands, fctDeleteFromStore, fctAddToStore)
-	-- local buf, win =
-	-- 	create_floating_window(10, 160, math.floor((vim.o.lines - 10) / 2), math.floor((vim.o.columns - 160) / 2), true)
-	--
-	-- local bufWin = {
-	-- 	buf = buf,
-	-- 	win = win,
-	-- }
-	--
-
-	local bufWin = ui.FloatingWindow.new(
-		10,
-		160,
-		math.floor((vim.o.lines - 10) / 2),
-		math.floor((vim.o.columns - 160) / 2),
-		true,
-		"sh"
-	)
-
-	local buf = bufWin.buf
-	local win = bufWin.win
-
-	vim.keymap.set("n", "<Esc>", function()
-		-- ui.close_floating_window(bufWin.buf, bufWin.win)
-		bufWin:close()
-	end, { buffer = buf, nowait = true })
-	vim.keymap.set("n", "q", function()
-		-- ui.close_floating_window(bufWin.buf, bufWin.win)
-		bufWin:close()
-	end, { buffer = buf, nowait = true })
-
-	vim.keymap.set("n", "<CR>", function()
-		local text = vim.api.nvim_buf_get_lines(buf, 0, -1, true)
-		-- ui.close_floating_window(bufWin.buf, bufWin.win)
-		bufWin:close()
-
-		local joined_text = table.concat(text, "\n"):match("^%s*(.-)%s*$")
-		fctAddToStore(joined_text)
-
+	ui.show_command_editor(cmd.format, fctAddToStore, function()
 		_show_test_selector(getCommands, fctDeleteFromStore, fctAddToStore)
-	end, { buffer = buf, nowait = true })
-
-	vim.api.nvim_create_autocmd("BufLeave", {
-		buffer = buf,
-		callback = function()
-			bufWin:close()
-			-- ui.close_floating_window(bufWin.buf, bufWin.win)
-		end,
-	})
-
-	local splittedLines = {}
-	for line in cmd.format:gmatch("[^\n]+") do
-		table.insert(splittedLines, line)
-	end
-
-	vim.api.nvim_buf_set_lines(buf, 0, 1, true, splittedLines)
-	vim.api.nvim_buf_set_option(buf, "modifiable", true)
+	end)
 end
 
 _show_test_selector = function(getCommands, fctDeleteFromStore, fctAddToStore)

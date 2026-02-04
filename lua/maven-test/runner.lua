@@ -47,7 +47,7 @@ function M.run_test_class(command)
 		return
 	end
 
-	local fully_qualified = package_name .. "." .. class_name
+	local fully_qualified = package_name .. "." .. class_name.name
 	local localCommand = string.format(command, fully_qualified)
 	M.run_command(localCommand)
 end

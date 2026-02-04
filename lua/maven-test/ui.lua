@@ -49,4 +49,53 @@ function M.FloatingWindow:is_active()
 	return win_id == self.win
 end
 
+function M.show_command_editor(cmd, fctAddToStore, onComplete)
+	local bufWin = M.FloatingWindow.new(
+		10,
+		160,
+		math.floor((vim.o.lines - 10) / 2),
+		math.floor((vim.o.columns - 160) / 2),
+		true,
+		"sh"
+	)
+
+	local buf = bufWin.buf
+
+	vim.api.nvim_win_set_option(bufWin.win, "winbar", "%#StatusLine#<CR> normal mode: save command | <esc>, <q> Quit")
+
+	vim.keymap.set("n", "<Esc>", function()
+		bufWin:close()
+		onComplete()
+	end, { buffer = buf, nowait = true })
+	vim.keymap.set("n", "q", function()
+		bufWin:close()
+		onComplete()
+	end, { buffer = buf, nowait = true })
+
+	vim.keymap.set("n", "<CR>", function()
+		local text = vim.api.nvim_buf_get_lines(buf, 0, -1, true)
+		bufWin:close()
+
+		local joined_text = table.concat(text, "\n"):match("^%s*(.-)%s*$")
+		fctAddToStore(joined_text)
+
+		onComplete()
+	end, { buffer = buf, nowait = true })
+
+	vim.api.nvim_create_autocmd("BufLeave", {
+		buffer = buf,
+		callback = function()
+			bufWin:close()
+		end,
+	})
+
+	local splittedLines = {}
+	for line in cmd:gmatch("[^\n]+") do
+		table.insert(splittedLines, line)
+	end
+
+	vim.api.nvim_buf_set_lines(buf, 0, 1, true, splittedLines)
+	vim.api.nvim_buf_set_option(buf, "modifiable", true)
+end
+
 return M
