@@ -16,7 +16,9 @@ lua/maven-test/
 ├── functions.lua         - High-level functions that connect commands to runner
 ├── parser.lua            - Treesitter-based parsing to detect test methods and classes
 ├── runner.lua            - Executes Maven commands in terminal
-├── ui.lua                - Floating window UI for test selection
+├── ui.lua                - Core floating window UI components and command editor
+├── ui-tests.lua          - Test selector UI with two-pane layout (actions and commands)
+├── ui-commands.lua       - Command list UI for viewing and managing stored commands
 ├── store.lua             - Command storage and retrieval
 └── store_persistence.lua - Saves/loads command store to/from disk
 
@@ -42,6 +44,8 @@ The plugin registers the following commands:
 - `:MavenTestDebug` - Opens floating window to select and debug a specific test method
 - `:MavenTestClassDebug` - Debugs all tests in the current class
 - `:MavenTestAllDebug` - Debugs all tests in the project
+- `:MavenTestCommands` - Opens floating window to view, edit, delete, and run stored Maven commands
+- `:MavenTestRestoreCommandsStore` - Restores the command store from disk
 
 ## Default Keymaps
 
@@ -75,20 +79,49 @@ require('maven-test').setup({
 
 ## UI Behavior
 
+### Test Selector UI (`:MavenTest`, `:MavenTestDebug`)
+
 When the user triggers `:MavenTest` or `:MavenTestDebug`:
 
 1. A floating window appears with two sections:
-   - **Top section**: List of test methods and option to run all tests in class
-   - **Bottom section**: Preview of Maven command(s) that will be executed
+   - **Top section (actions)**: List of test methods and option to run all tests in class
+   - **Bottom section (commands)**: Preview of Maven command(s) that will be executed
 
 2. Navigation:
-   - Use `j/k` or arrow keys to move through the list
+   - Use `j/k` or arrow keys to move through the list in the actions section
+   - Press `<Space>` to switch focus to the commands section
    - Press `<Enter>` to execute the selected test
+   - Press `m` in commands section to edit the selected command
+   - Press `d` in commands section to delete the selected command (if more than one exists)
    - Press `q` or `<Esc>` to close the window
 
 3. The preview updates dynamically as the cursor moves to show the exact command(s) for the selected item
 
 4. Upon selection, a terminal split opens at the bottom showing Maven output in real-time
+
+### Command List UI (`:MavenTestCommands`)
+
+When the user triggers `:MavenTestCommands`:
+
+1. A floating window displays all stored Maven commands for the current action type
+
+2. Navigation:
+   - Use `j/k` or arrow keys to move through the command list
+   - Press `<Enter>` or `<Space>` to execute the selected command
+   - Press `m` to edit the selected command
+   - Press `d` to delete the selected command
+   - Press `q` or `<Esc>` to close the window
+
+3. The command list updates automatically when commands are deleted
+
+### Command Editor
+
+When editing a command (via `m` keymap):
+
+1. A floating window appears with the current command as editable text
+2. The editor starts in insert mode for immediate editing
+3. Press `<Enter>` in normal mode to save changes and return to the previous UI
+4. Press `<Esc>` or `q` in normal mode to cancel and return without saving
 
 ## Parser Details
 
@@ -164,16 +197,24 @@ load()
 Store file location: `~/.local/share/nvim/maven.nvim.test/<project-name>/store.json`
 
 
-### UI 
+### UI Modules
 
-The UI (`ui.lua`) provides a floating window with two sections:
+The UI is split into three modules:
 
-- **Top section**: Lists test methods and an option to run all tests in the class
-- **Bottom section**: Shows a preview of the Maven command(s) that will be executed
-
-Users can navigate the list using `j/k` or arrow keys, press `<Enter>` to run the selected test, and press `q` or `<Esc>` to close the window. The preview updates dynamically as the cursor moves.
-
-The top section contains a text to invite user to view the available commands (j/k, <Enter>, q and <Esc>).
+- **`ui.lua`**: Core floating window components and the command editor
+  - `FloatingWindow` class for creating floating windows
+  - `show_command_editor()` function for editing commands
+  
+- **`ui-tests.lua`**: Test selector with two-pane layout
+  - Top pane: Lists test methods and test class with line numbers
+  - Bottom pane: Shows available commands for the selected test
+  - Supports navigation between panes with `<Space>`
+  - Allows editing (`m`) and deleting (`d`) commands from the bottom pane
+  
+- **`ui-commands.lua`**: Command list viewer and manager
+  - Single-pane window showing all stored commands for an action
+  - Supports running (`<Enter>`), editing (`m`), and deleting (`d`) commands
+  - Updates the UI automatically after deletions<Enter>, q and <Esc>).
 
 ## Code Design Principles
 
@@ -189,9 +230,11 @@ The top section contains a text to invite user to view the available commands (j
   
 ### Module Dependencies
 ```
-init.lua → commands.lua → functions.lua → [parser.lua, runner.lua, ui.lua]
+init.lua → commands.lua → functions.lua → [parser.lua, runner.lua, ui-tests.lua, ui-commands.lua]
+                                        ↓                              ↓
+                                    store.lua                       ui.lua
                                         ↓
-                                    store.lua → store_persistence.lua
+                                store_persistence.lua
 ```
 
 ### Key Design Patterns
@@ -211,7 +254,7 @@ init.lua → commands.lua → functions.lua → [parser.lua, runner.lua, ui.lua]
 
 ### Keymap Requirements
 - **Plug Mappings Only**: All shortcut commands must be of type `<Plug>` to allow user override
-- **No Hard Bindings**: Default keymaps can be disabled by users
+- No mapping defined by the plugin. All mapping should be defined by the user. Document how the mapping should be done.
 
 ### Performance
 - **Lazy Loading**: Plugin loads only when needed (via autocommands or explicit commands)
@@ -239,11 +282,21 @@ init.lua → commands.lua → functions.lua → [parser.lua, runner.lua, ui.lua]
 - Test class name is extracted via treesitter query for `class_declaration`
 - Store operations are idempotent - adding the same command twice has no effect
 
+## Recent Changes
+
+- Split UI into three modules (`ui.lua`, `ui-tests.lua`, `ui-commands.lua`) for better separation of concerns
+- Added command editing functionality: users can now modify stored commands via `m` keymap
+- Added command deletion functionality: users can delete stored commands via `d` keymap
+- Added `:MavenTestCommands` command to view and manage all stored commands
+- Command editor opens in insert mode for immediate editing
+- UI updates automatically after command deletions
+- Command editor preserves multi-line commands
+
 ## Future Improvements
 
 - Integration with telescope/fzf for better selection UI
-- Allow users to edit and add custom Maven commands through the UI
 - Per-project configuration files for custom arguments
 - Support for additional test frameworks (TestNG, etc.)
 - Command history and selection of previously run commands
 - Ability to run tests from the last run without opening the selector
+- Command templates with user-defined variables

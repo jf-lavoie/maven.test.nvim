@@ -14,7 +14,7 @@ local function get_package_name()
 	return nil
 end
 
-function M.run_maven_test(command)
+function M.run_command(command)
 	vim.notify("Running: " .. command, vim.log.levels.INFO)
 
 	-- Open a new terminal split
@@ -35,7 +35,7 @@ function M.run_test_method(method_name, command)
 
 	local fully_qualified = package_name .. "." .. class_name .. "#" .. method_name
 	local localCommand = string.format(command, fully_qualified)
-	M.run_maven_test(localCommand)
+	M.run_command(localCommand)
 end
 
 function M.run_test_class(command)
@@ -47,13 +47,13 @@ function M.run_test_class(command)
 		return
 	end
 
-	local fully_qualified = package_name .. "." .. class_name
+	local fully_qualified = package_name .. "." .. class_name.name
 	local localCommand = string.format(command, fully_qualified)
-	M.run_maven_test(localCommand)
+	M.run_command(localCommand)
 end
 
 function M.run_all_tests(command)
-	M.run_maven_test(command)
+	M.run_command(command)
 end
 
 return M

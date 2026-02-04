@@ -31,6 +31,10 @@ vim.api.nvim_create_autocmd("FileType", {
 			functions.restore_store()
 		end, { desc = "Restore stored commands" })
 
+		vim.api.nvim_buf_create_user_command(args.buf, "MavenTestCommands", function()
+			functions.commands()
+		end, { desc = "Show commands" })
+
 		-- ... other commands
 	end,
 })

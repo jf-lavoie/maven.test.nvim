@@ -14,7 +14,8 @@ A Neovim plugin that provides Maven integration for testing Java projects. Using
 - 🐛 Debug tests with breakpoints
 - 🎨 Interactive floating window for test selection
 - 🌲 Treesitter-based test detection
-- 📺 Test output in terminal window inside Neovim
+- 💾 Store, edit, and reuse custom Maven commands
+- ⚡ Quick access to command history per project
 
 ## Requirements
 
@@ -62,22 +63,57 @@ Debug commands start Maven Surefire in debug mode, listening on the configured p
 
 ### Keymaps
 
-Default keymaps (can be overridden):
-- `<leader>Mt` - Run test selector
-- `<leader>Mc` - Run test class
-- `<leader>Ma` - Run all tests
+The plugin provides `<Plug>` mappings that you can use to create your own keymaps. No default keymaps are set, giving you full control over your key bindings.
 
-Custom keymaps example:
+#### Available `<Plug>` Mappings
+
+- `<Plug>(maven-test)` - Open test selector
+- `<Plug>(maven-test-class)` - Run all tests in current class
+- `<Plug>(maven-test-all)` - Run all tests in project
+- `<Plug>(maven-test-debug)` - Open test selector in debug mode
+- `<Plug>(maven-test-class-debug)` - Debug all tests in current class
+- `<Plug>(maven-test-all-debug)` - Debug all tests in project
+- `<Plug>(maven-test-commands)` - Open stored commands viewer
+
+#### Custom Keymap Examples
+
+You can create your own mappings in your Neovim configuration:
 
 ```lua
-vim.keymap.set('n', '<leader>mt', '<cmd>MavenTest<cr>', { desc = 'Maven: Run test' })
-vim.keymap.set('n', '<leader>mc', '<cmd>MavenTestClass<cr>', { desc = 'Maven: Run test class' })
-vim.keymap.set('n', '<leader>ma', '<cmd>MavenTestAll<cr>', { desc = 'Maven: Run all tests' })
+-- Basic test commands
+vim.keymap.set('n', '<leader>Xt', '<Plug>(maven-test)', { desc = 'Maven: Run test' })
+vim.keymap.set('n', '<leader>Xc', '<Plug>(maven-test-class)', { desc = 'Maven: Run test class' })
+vim.keymap.set('n', '<leader>Xa', '<Plug>(maven-test-all)', { desc = 'Maven: Run all tests' })
 
 -- Debug mode
-vim.keymap.set('n', '<leader>md', '<cmd>MavenTestDebug<cr>', { desc = 'Maven: Debug test' })
-vim.keymap.set('n', '<leader>mD', '<cmd>MavenTestClassDebug<cr>', { desc = 'Maven: Debug test class' })
-vim.keymap.set('n', '<leader>mA', '<cmd>MavenTestAllDebug<cr>', { desc = 'Maven: Debug all tests' })
+vim.keymap.set('n', '<leader>Xdt', '<Plug>(maven-test-debug)', { desc = 'Maven: Debug test' })
+vim.keymap.set('n', '<leader>Xdc', '<Plug>(maven-test-class-debug)', { desc = 'Maven: Debug test class' })
+vim.keymap.set('n', '<leader>Xda', '<Plug>(maven-test-all-debug)', { desc = 'Maven: Debug all tests' })
+
+-- Command viewer
+vim.keymap.set('n', '<leader>Xx', '<Plug>(maven-test-commands)', { desc = 'Maven: View commands' })
+```
+
+#### Filetype-Specific Mappings
+
+To create mappings only for Java files, use an autocommand:
+
+```lua
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'java',
+  callback = function()
+    vim.keymap.set('n', '<leader>Xt', '<Plug>(maven-test)', { buffer = true, desc = 'Maven: Run test' })
+    vim.keymap.set('n', '<leader>Xc', '<Plug>(maven-test-class)', { buffer = true, desc = 'Maven: Run test class' })
+    -- Add more mappings as needed
+  end
+})
+```
+
+Or create a file at `~/.config/nvim/ftplugin/java.lua`:
+
+```lua
+vim.keymap.set('n', '<leader>Xt', '<Plug>(maven-test)', { buffer = true, desc = 'Maven: Run test' })
+vim.keymap.set('n', '<leader>Xc', '<Plug>(maven-test-class)', { buffer = true, desc = 'Maven: Run test class' })
 ```
 
 ### Interactive Test Selection
