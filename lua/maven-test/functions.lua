@@ -100,7 +100,6 @@ end
 function M.run_test_class()
 	_initialize()
 	local cmds = store.first(RUN_CLASS_KEY)
-	vim.print("jf-debug-> 'cmds': " .. vim.inspect(cmds))
 	require("maven-test.runner").run_test_class(cmds)
 end
 
