@@ -4,7 +4,7 @@
 -- License: MIT (2026)
 
 -- Register FileType autocmd to create commands when Java files are opened
-require("maven-test.commands")
+require("maven-test.user_commands")
 
 -- Define <Plug> mappings
 vim.keymap.set("n", "<Plug>(maven-test)", ":MavenTest<CR>", { silent = true })

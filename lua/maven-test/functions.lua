@@ -78,7 +78,7 @@ end
 function M.commands()
 	_initialize()
 
-	require("maven-test.ui.commands").show_commands(function()
+	require("maven-test.commands.ui").show_commands(function()
 		return store.get(COMMANDS)
 	end, function(value)
 		store.remove(COMMANDS, value)
@@ -101,7 +101,7 @@ end
 
 function M.run_test()
 	_initialize()
-	require("maven-test.ui.tests").show_test_selector(function()
+	require("maven-test.tests.ui").show_test_selector(function()
 		return store.get(RUN_METHOD_KEY)
 	end, function(value)
 		store.remove(RUN_METHOD_KEY, value)
@@ -112,32 +112,37 @@ end
 
 function M.run_test_class()
 	_initialize()
-	local cmds = store.first(RUN_CLASS_KEY)
-	require("maven-test.runner").run_test_class(cmds)
+	local cmd = store.first(RUN_CLASS_KEY)
+	require("maven-test.runner.runner").run_test_class(cmd)
 end
 
 function M.run_all_tests()
 	_initialize()
-	local cmds = store.first(RUN_ALL_KEY)
-	require("maven-test.runner").run_all_tests(cmds)
+	local cmd = store.first(RUN_ALL_KEY)
+	require("maven-test.runner.runner").run_all_tests(cmd)
 end
 
 function M.run_test_debug()
 	_initialize()
-	local cmds = store.get(RUN_METHOD_DEBUG_KEY)
-	require("maven-test.ui.tests").show_test_selector(cmds)
+	require("maven-test.tests.ui").show_test_selector(function()
+		return store.get(RUN_METHOD_DEBUG_KEY)
+	end, function(value)
+		store.remove(RUN_METHOD_DEBUG_KEY, value)
+	end, function(value)
+		store.add(RUN_METHOD_DEBUG_KEY, value)
+	end)
 end
 
 function M.run_test_class_debug()
 	_initialize()
-	local cmds = store.first(RUN_CLASS_DEBUG_KEY)
-	require("maven-test.runner").run_test_class(cmds)
+	local cmd = store.first(RUN_CLASS_DEBUG_KEY)
+	require("maven-test.runner.runner").run_test_class(cmd)
 end
 
 function M.run_all_tests_debug()
 	_initialize()
-	local cmds = store.first(RUN_ALL_DEBUG_KEY)
-	require("maven-test.runner").run_all_tests(cmds)
+	local cmd = store.first(RUN_ALL_DEBUG_KEY)
+	require("maven-test.runner.runner").run_all_tests(cmd)
 end
 
 function M.restore_store()

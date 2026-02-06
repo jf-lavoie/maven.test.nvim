@@ -33,7 +33,7 @@ function M.run_command(command)
 end
 
 function M.run_test_method(method_name, command)
-	local class_name = require("maven-test.parser").get_test_class()
+	local class_name = require("maven-test.tests.parser").get_test_class()
 	local package_name = get_package_name()
 
 	if not class_name or not package_name then
@@ -47,7 +47,7 @@ function M.run_test_method(method_name, command)
 end
 
 function M.run_test_class(command)
-	local class_name = require("maven-test.parser").get_test_class()
+	local class_name = require("maven-test.tests.parser").get_test_class()
 	local package_name = get_package_name()
 
 	if not class_name or not package_name then

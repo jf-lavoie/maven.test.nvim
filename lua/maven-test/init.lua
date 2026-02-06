@@ -33,7 +33,7 @@ function M.setup(opts)
 
 	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
 
-	require("maven-test.commands")
+	require("maven-test.user_commands")
 
 	vim.g.loaded_maven_test = 1
 end

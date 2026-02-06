@@ -209,8 +209,8 @@ show_command_editor = function(cmd, getCommands, fctDeleteFromStore, fctAddToSto
 end
 
 _show_test_selector = function(getCommands, fctDeleteFromStore, fctAddToStore)
-	local parser = require("maven-test.parser")
-	local runner = require("maven-test.runner")
+	local parser = require("maven-test.tests.parser")
+	local runner = require("maven-test.runner.runner")
 
 	local testMethods = parser.get_test_methods()
 	local class = parser.get_test_class()

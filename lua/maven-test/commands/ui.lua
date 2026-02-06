@@ -1,7 +1,7 @@
 local M = {}
 
 local ui = require("maven-test.ui.ui")
-local runner = require("maven-test.runner")
+local runner = require("maven-test.runner.runner")
 
 local width = ui.width
 local height = ui.height
