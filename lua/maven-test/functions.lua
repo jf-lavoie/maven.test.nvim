@@ -78,7 +78,7 @@ end
 function M.commands()
 	_initialize()
 
-	require("maven-test.ui-commands").show_commands(function()
+	require("maven-test.ui.commands").show_commands(function()
 		return store.get(COMMANDS)
 	end, function(value)
 		store.remove(COMMANDS, value)
@@ -90,7 +90,7 @@ end
 function M.show_custom_arguments()
 	_initialize()
 
-	require("maven-test.ui").default_arguments_editor(
+	require("maven-test.ui.ui").default_arguments_editor(
 		store_arg.list,
 		store_arg.add,
 		store_arg.update,
@@ -101,7 +101,7 @@ end
 
 function M.run_test()
 	_initialize()
-	require("maven-test.ui-tests").show_test_selector(function()
+	require("maven-test.ui.tests").show_test_selector(function()
 		return store.get(RUN_METHOD_KEY)
 	end, function(value)
 		store.remove(RUN_METHOD_KEY, value)
@@ -125,7 +125,7 @@ end
 function M.run_test_debug()
 	_initialize()
 	local cmds = store.get(RUN_METHOD_DEBUG_KEY)
-	require("maven-test.ui-tests").show_test_selector(cmds)
+	require("maven-test.ui.tests").show_test_selector(cmds)
 end
 
 function M.run_test_class_debug()
