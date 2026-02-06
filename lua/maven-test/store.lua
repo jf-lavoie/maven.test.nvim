@@ -24,7 +24,7 @@ function M.load()
 	store = persistence.load()
 end
 
-function M.add_to_store(key, value)
+function M.add(key, value)
 	_initialize_store()
 	if not store[key] then
 		store[key] = { value }
@@ -42,7 +42,7 @@ function M.add_to_store(key, value)
 	save_store()
 end
 
-function M.remove_from_store(key, value)
+function M.remove(key, value)
 	_initialize_store()
 	if not store[key] then
 		return

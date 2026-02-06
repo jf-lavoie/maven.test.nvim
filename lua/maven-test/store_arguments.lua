@@ -108,7 +108,7 @@ function M.load()
 	store = persistence:load()
 end
 
-function M.add_to_store(arg)
+function M.add(arg)
 	_initialize_store()
 
 	for _, v in ipairs(store) do
@@ -133,7 +133,7 @@ function M.update(arg)
 	save_store()
 end
 
-function M.remove_from_store(arg)
+function M.remove(arg)
 	_initialize_store()
 
 	for i, v in ipairs(store) do
