@@ -1,10 +1,24 @@
-local M
+--- CustomArgument class for managing Maven command arguments
+--- Represents a custom Maven argument that can be toggled on/off
+--- and appended to Maven commands
+--- @module maven-test.store.custom_argument
 
-M = {}
+local M = {}
 
+--- CustomArgument class
+--- @class CustomArgument
+--- @field text string The Maven argument text (e.g., "-X", "-DskipTests")
+--- @field active boolean Whether this argument is currently active
 M.CustomArgument = {}
 M.CustomArgument.__index = M.CustomArgument
 
+--- Create a new CustomArgument instance
+--- @param text string The Maven argument text
+--- @param active boolean Whether the argument is active
+--- @return CustomArgument New CustomArgument instance
+--- @usage
+---   local arg = CustomArgument.new("-X", true)
+---   local inactive_arg = CustomArgument.new("-DskipTests", false)
 function M.CustomArgument.new(text, active)
 	local self = setmetatable({}, M.CustomArgument)
 
@@ -15,12 +29,29 @@ function M.CustomArgument.new(text, active)
 	return self
 end
 
+--- Toggle the active state of this argument
+--- Flips the active flag between true and false
+--- @return CustomArgument Returns self for method chaining
+--- @usage
+---   local arg = CustomArgument.new("-X", true)
+---   arg:toggle_active()  -- Now active = false
+---   arg:toggle_active()  -- Now active = true again
 function M.CustomArgument:toggle_active()
 	self.active = not self.active
 
 	return self
 end
 
+--- Append this argument to a Maven command
+--- Only appends if the argument text is not already present in the command
+--- Prevents duplicate arguments in the same command
+--- @param command string The Maven command to append to
+--- @return string The command with the argument appended (or unchanged if already present)
+--- @usage
+---   local arg = CustomArgument.new("-X", true)
+---   local cmd = "mvn test"
+---   cmd = arg:append_to_command(cmd)  -- Returns "mvn test -X"
+---   cmd = arg:append_to_command(cmd)  -- Returns "mvn test -X" (no duplicate)
 function M.CustomArgument:append_to_command(command)
 	if not command:find(self.text, 1, true) then
 		return command .. " " .. self.text

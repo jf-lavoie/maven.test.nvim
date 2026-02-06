@@ -1,5 +1,19 @@
+--- Java test parser using Treesitter
+--- Detects test methods and classes in Java files using treesitter queries
+--- Supports @Test and @ArchTest annotations
+--- @module maven-test.tests.parser
+
 local M = {}
 
+--- Get all test methods in the current buffer
+--- Searches for methods annotated with @Test or @ArchTest
+--- Also finds @ArchTest annotated fields (ArchUnit test rules)
+--- @return table[] Array of test objects, each with: { name: string, line: number, type: "method" }
+--- @usage
+---   local tests = parser.get_test_methods()
+---   for _, test in ipairs(tests) do
+---     print(test.name .. " at line " .. test.line)
+---   end
 function M.get_test_methods()
 	local bufnr = vim.api.nvim_get_current_buf()
 	local parser = vim.treesitter.get_parser(bufnr, "java")
@@ -11,6 +25,7 @@ function M.get_test_methods()
 	local root = tree:root()
 	local tests = {}
 
+	-- Query for @Test annotation on methods
 	local query = vim.treesitter.query.parse(
 		"java",
 		[[
@@ -81,7 +96,7 @@ function M.get_test_methods()
 			table.insert(tests, {
 				name = field_name,
 				line = start_row + 1,
-				type = "method",
+				type = "method", -- Note: fields are also marked as "method" for consistency
 			})
 		end
 	end
@@ -89,6 +104,14 @@ function M.get_test_methods()
 	return tests
 end
 
+--- Get the test class name from the current buffer
+--- Extracts the first class declaration found in the file
+--- @return table|nil Class object with: { name: string, line: number, type: "class" }, or nil if not found
+--- @usage
+---   local class = parser.get_test_class()
+---   if class then
+---     print("Class: " .. class.name)
+---   end
 function M.get_test_class()
 	local bufnr = vim.api.nvim_get_current_buf()
 	local parser = vim.treesitter.get_parser(bufnr, "java")

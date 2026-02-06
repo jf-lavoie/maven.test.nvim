@@ -487,15 +487,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) - Required for test detection
 - [nvim-dap](https://github.com/mfussenegger/nvim-dap) - For debugging tests with breakpoints
 
-## Roadmap
-
-- [ ] Telescope/fzf integration for test selection
-- [ ] Test result parsing and summary display
-- [ ] Quick fix list for test failures
-- [ ] Command history tracking
-- [ ] Multi-module Maven project support
-- [ ] Watch mode (auto-rerun on file save)
-
 ---
 
 **Maven Test Runner for Neovim** - Run and debug Java tests without leaving your editor.
