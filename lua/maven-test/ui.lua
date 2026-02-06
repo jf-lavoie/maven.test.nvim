@@ -1,6 +1,7 @@
 local M = {}
 
 local config = require("maven-test").config
+local store_arg = require("maven-test.store_arguments")
 
 M.width = math.floor(vim.o.columns * config.floating_window.width)
 M.height = math.floor(vim.o.lines * config.floating_window.height)
@@ -35,11 +36,11 @@ function M.FloatingWindow.new(wHeight, wWidth, wRow, wCol, enter, filetype)
 end
 
 function M.FloatingWindow:close()
-	if vim.api.nvim_win_is_valid(self.win) then
-		vim.api.nvim_win_close(self.win, true)
-	end
 	if vim.api.nvim_buf_is_valid(self.buf) then
-		vim.api.nvim_buf_delete(self.buf, { force = true })
+		pcall(vim.api.nvim_buf_delete, self.bur, { force = true })
+	end
+	if vim.api.nvim_win_is_valid(self.win) then
+		pcall(vim.api.nvim_win_close, self.win, true)
 	end
 end
 
@@ -96,6 +97,79 @@ function M.show_command_editor(cmd, fctAddToStore, onComplete)
 
 	vim.api.nvim_buf_set_lines(buf, 0, 1, true, splittedLines)
 	vim.api.nvim_buf_set_option(buf, "modifiable", true)
+end
+
+function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onComplete)
+	local bufWin = M.FloatingWindow.new(
+		10,
+		160,
+		math.floor((vim.o.lines - 10) / 2),
+		math.floor((vim.o.columns - 160) / 2),
+		true,
+		"sh"
+	)
+
+	local function update_view()
+		vim.api.nvim_buf_set_option(bufWin.buf, "modifiable", true)
+		vim.api.nvim_buf_set_lines(bufWin.buf, 0, 1, true, {})
+
+		local splittedLines = {}
+		local args = getArgs()
+		for _, arg in ipairs(args) do
+			local line = "🔴 "
+			if arg.active then
+				line = "🟢 "
+			end
+			table.insert(splittedLines, line .. arg.text)
+		end
+
+		vim.api.nvim_buf_set_lines(bufWin.buf, 0, 1, true, splittedLines)
+		vim.api.nvim_buf_set_option(bufWin.buf, "modifiable", false)
+	end
+
+	vim.api.nvim_win_set_option(
+		bufWin.win,
+		"winbar",
+		"%#StatusLine# <a> add an argument | <space> toggle activation | <esc>, <q> Quit"
+	)
+
+	vim.keymap.set("n", "<Esc>", function()
+		bufWin:close()
+		onComplete()
+	end, { buffer = bufWin.buf, nowait = true })
+	vim.keymap.set("n", "q", function()
+		bufWin:close()
+		onComplete()
+	end, { buffer = bufWin.buf, nowait = true })
+
+	vim.keymap.set("n", "a", function()
+		bufWin:close()
+		M.show_command_editor("", function(arg)
+			onAddArg(store_arg.CustomArgument.new(arg, false))
+		end, function()
+			M.default_arguments_editor(getArgs, onAddArg, onComplete)
+		end)
+	end, { buffer = bufWin.buf, nowait = true })
+
+	vim.keymap.set("n", "<space>", function()
+		local index = vim.api.nvim_win_get_cursor(bufWin.win)[1]
+
+		local arg = getArgs()[index]
+
+		arg:toggle_active()
+
+		onUpdateArg(arg)
+		update_view()
+	end, { buffer = bufWin.buf, nowait = true })
+
+	vim.api.nvim_create_autocmd("BufLeave", {
+		buffer = bufWin.buf,
+		callback = function()
+			vim.print("jf-debug-> 'bufWin': " .. vim.inspect(bufWin))
+			bufWin:close()
+		end,
+	})
+	update_view()
 end
 
 return M

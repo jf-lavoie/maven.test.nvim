@@ -1,6 +1,7 @@
 local M = {}
 
 local store = require("maven-test.store")
+local store_arg = require("maven-test.store_arguments")
 
 local RUN_ALL_KEY = "run_all"
 local RUN_CLASS_KEY = "run_class"
@@ -84,6 +85,18 @@ function M.commands()
 	end, function(value)
 		store.add_to_store(COMMANDS, value)
 	end)
+end
+
+function M.show_custom_arguments()
+	_initialize()
+
+	require("maven-test.ui").default_arguments_editor(function()
+		return store_arg.list()
+	end, function(arg)
+		store_arg.add_to_store(arg)
+	end, function(arg)
+		store_arg.update(arg)
+	end, function() end)
 end
 
 function M.run_test()

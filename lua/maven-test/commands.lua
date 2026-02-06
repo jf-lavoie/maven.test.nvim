@@ -48,6 +48,11 @@ vim.api.nvim_create_autocmd("FileType", {
 			require("maven-test.functions").commands()
 		end, { desc = "Show commands" })
 
+		vim.api.nvim_buf_create_user_command(args.buf, "MavenTestCustomArguments", function()
+			ensure_loaded()
+			require("maven-test.functions").show_custom_arguments()
+		end, { desc = "Show custom arguments" })
+
 		-- ... other commands
 	end,
 })
