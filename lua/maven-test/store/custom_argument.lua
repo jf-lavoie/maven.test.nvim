@@ -21,4 +21,11 @@ function M.CustomArgument:toggle_active()
 	return self
 end
 
+function M.CustomArgument:append_to_command(command)
+	if not command:find(self.text, 1, true) then
+		return command .. " " .. self.text
+	end
+	return command
+end
+
 return M
