@@ -15,6 +15,14 @@ local function get_package_name()
 end
 
 function M.run_command(command)
+	local customArguments = require("maven-test.store.arguments")
+
+	for _, arg in ipairs(customArguments.list()) do
+		if arg.active then
+			command = arg:append_to_command(command)
+		end
+	end
+
 	vim.notify("Running: " .. command, vim.log.levels.INFO)
 
 	-- Open a new terminal split

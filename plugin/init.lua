@@ -15,3 +15,4 @@ vim.keymap.set("n", "<Plug>(maven-test-class-debug)", ":MavenTestClassDebug<CR>"
 vim.keymap.set("n", "<Plug>(maven-test-all-debug)", ":MavenTestAllDebug<CR>", { silent = true })
 
 vim.keymap.set("n", "<Plug>(maven-test-commands)", ":MavenTestCommands<CR>", { silent = true })
+vim.keymap.set("n", "<Plug>(maven-test-custom-arguments)", ":MavenTestCustomArguments<CR>", { silent = true })

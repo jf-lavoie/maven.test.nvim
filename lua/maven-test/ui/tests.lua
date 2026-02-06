@@ -1,6 +1,6 @@
 local M = {}
 
-local ui = require("maven-test.ui")
+local ui = require("maven-test.ui.ui")
 
 local width = ui.width
 local total_height = ui.height
@@ -128,8 +128,17 @@ local function update_preview(actionsWin, commandsWin, fqnCommands)
 	if line <= #fqnCommands then
 		local fqn = fqnCommands[line]
 
+		local customArguments = require("maven-test.store.arguments")
+
 		for index, value in ipairs(fqn.commands) do
 			local t = value:toPreviewString()
+
+			for _, arg in ipairs(customArguments.list()) do
+				if arg.active then
+					t = arg:append_to_command(t)
+				end
+			end
+
 			table.insert(cmds, index, t)
 		end
 	end

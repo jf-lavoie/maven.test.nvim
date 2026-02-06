@@ -1,34 +1,31 @@
 local M = {}
 
-local persistence = require("maven-test.store_persistence")
+vim.print(
+	"jf-debug-> 'require(maven-test.store.persistence)': " .. vim.inspect(require("maven-test.store.persistence"))
+)
+local persistence = require("maven-test.store.persistence").Persistence.new("store.json")
 local store = {}
--- local store_loaded = false
 
 local function _initialize_store()
-	-- if store_loaded then
-	-- 	return
-	-- end
-
-	-- store_loaded = true
-	store = persistence.load()
+	store = persistence:load()
 	_initialize_store = function() end
 end
 
-local function save_store()
+local function save()
 	_initialize_store()
-	persistence.save(store)
+	persistence:save(store)
 end
 
 function M.load()
 	_initialize_store()
-	store = persistence.load()
+	store = persistence:load()
 end
 
-function M.add_to_store(key, value)
+function M.add(key, value)
 	_initialize_store()
 	if not store[key] then
 		store[key] = { value }
-		save_store()
+		save()
 		return
 	end
 
@@ -39,10 +36,10 @@ function M.add_to_store(key, value)
 	end
 
 	table.insert(store[key], 1, value)
-	save_store()
+	save()
 end
 
-function M.remove_from_store(key, value)
+function M.remove(key, value)
 	_initialize_store()
 	if not store[key] then
 		return
@@ -59,7 +56,7 @@ function M.remove_from_store(key, value)
 		store[key] = nil
 	end
 
-	save_store()
+	save()
 end
 
 function M.first(key)
@@ -78,7 +75,7 @@ end
 function M.empty_store()
 	_initialize_store()
 	store = {}
-	save_store()
+	save()
 end
 
 return M

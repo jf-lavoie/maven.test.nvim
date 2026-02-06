@@ -1,6 +1,6 @@
 local M = {}
 
-local ui = require("maven-test.ui")
+local ui = require("maven-test.ui.ui")
 local runner = require("maven-test.runner")
 
 local width = ui.width
@@ -8,17 +8,25 @@ local height = ui.height
 local row = ui.row
 local col = ui.col
 
-local function run_command(bufWin)
-	local line = vim.api.nvim_get_current_line()
+local function run_command(bufWin, cmd)
 	bufWin:close()
-	runner.run_command(line)
+	runner.run_command(cmd)
 end
 
-local function update_floating_window(bufWin, getCommands)
+local function update_view(bufWin, getCommands)
 	local cmds = {}
+
+	local customArguments = require("maven-test.store.arguments")
 
 	for index, value in ipairs(getCommands()) do
 		local sanitize = value:gsub("\n", "\\n"):gsub("\r", "\\r"):gsub("\t", "\\t")
+
+		for _, arg in ipairs(customArguments.list()) do
+			if arg.active then
+				sanitize = arg:append_to_command(sanitize)
+			end
+		end
+
 		table.insert(cmds, index, sanitize)
 	end
 
@@ -26,6 +34,14 @@ local function update_floating_window(bufWin, getCommands)
 	vim.api.nvim_buf_set_option(bufWin.buf, "modifiable", true)
 	vim.api.nvim_buf_set_lines(bufWin.buf, 0, -1, false, preview_lines)
 	vim.api.nvim_buf_set_option(bufWin.buf, "modifiable", false)
+end
+
+local function getSelectedCmd(bufWin, getCommands)
+	local index = vim.api.nvim_win_get_cursor(bufWin.win)[1]
+
+	local cmd = getCommands()[index]
+
+	return cmd
 end
 
 function M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore)
@@ -50,30 +66,30 @@ function M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore)
 	end, { buffer = bufWin.buf, nowait = true })
 
 	vim.keymap.set("n", "<Space>", function()
-		run_command(bufWin)
+		run_command(bufWin, getSelectedCmd(bufWin, getCommands))
 	end, { buffer = bufWin.buf, nowait = true })
 
 	vim.keymap.set("n", "<CR>", function()
-		run_command(bufWin)
+		run_command(bufWin, getSelectedCmd(bufWin, getCommands))
 	end, { buffer = bufWin.buf, nowait = true })
 
 	vim.keymap.set("n", "d", function()
-		local line = vim.api.nvim_get_current_line()
-		fctDeleteFromStore(line)
+		local cmd = getSelectedCmd(bufWin, getCommands)
+		fctDeleteFromStore(cmd)
 
-		update_floating_window(bufWin, getCommands)
+		update_view(bufWin, getCommands)
 	end, { buffer = bufWin.buf, nowait = true })
 
 	vim.keymap.set("n", "m", function()
-		local line = vim.api.nvim_get_current_line()
+		local cmd = getSelectedCmd(bufWin, getCommands)
 		bufWin:close()
 
-		ui.show_command_editor(line, fctAddToStore, function()
+		ui.show_command_editor(cmd, fctAddToStore, function()
 			M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore)
 		end)
 	end, { buffer = bufWin.buf, nowait = true })
 
-	update_floating_window(bufWin, getCommands)
+	update_view(bufWin, getCommands)
 
 	vim.api.nvim_win_set_option(
 		bufWin.win,
