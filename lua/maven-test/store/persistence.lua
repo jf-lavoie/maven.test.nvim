@@ -1,30 +1,29 @@
 local M = {}
 
-M.data_dir = nil
+M.Persistence = {}
+M.Persistence.__index = M.Persistence
 
-local initialized = false
-
-local function get_store_file()
-	return M.data_dir .. "/store.json"
+function M.Persistence.new(fileName)
+	local self = setmetatable({}, M.Persistence)
+	self.dataDir = require("maven-test").config.data_dir
+	self.filePath = self.dataDir .. "/" .. fileName
+	self.initialized = false
+	return self
 end
 
-local function _initialize()
-	if initialized then
+function M.Persistence:_initialize()
+	if self.initialized then
 		return
 	end
-	initialized = true
+	self.initialized = true
 
-	vim.fn.mkdir(M.data_dir, "p")
+	vim.fn.mkdir(self.datadir, "p")
 end
 
-function M.setup(data_dir)
-	M.data_dir = data_dir
-end
+function M.Persistence:save(store_data)
+	self:_initialize()
 
-function M.save(store_data)
-	_initialize()
-
-	local file = get_store_file()
+	local file = self.filePath
 	local json = vim.fn.json_encode(store_data)
 
 	local f = io.open(file, "w")
@@ -36,10 +35,10 @@ function M.save(store_data)
 	return false
 end
 
-function M.load()
-	_initialize()
+function M.Persistence:load()
+	self:_initialize()
 
-	local file = get_store_file()
+	local file = self.filePath
 
 	if vim.fn.filereadable(file) == 0 then
 		return {}

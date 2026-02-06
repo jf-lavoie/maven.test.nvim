@@ -2,103 +2,22 @@ local M
 
 M = {}
 
-M.Persistence = {}
-M.Persistence.__index = M.Persistence
-
-function M.Persistence.new(fileName)
-	local self = setmetatable({}, M.Persistence)
-	self.dataDir = require("maven-test").config.data_dir
-	self.filePath = self.dataDir .. "/" .. fileName
-	self.initialized = false
-	return self
-end
-
-function M.Persistence:_initialize()
-	if self.initialized then
-		return
-	end
-	self.initialized = true
-
-	vim.fn.mkdir(self.datadir, "p")
-end
-
-function M.Persistence:save(store_data)
-	self:_initialize()
-
-	local file = self.filePath
-	local json = vim.fn.json_encode(store_data)
-
-	local f = io.open(file, "w")
-	if f then
-		f:write(json)
-		f:close()
-		return true
-	end
-	return false
-end
-
-function M.Persistence:load()
-	self:_initialize()
-
-	local file = self.filePath
-
-	if vim.fn.filereadable(file) == 0 then
-		return {}
-	end
-
-	local f = io.open(file, "r")
-	if not f then
-		return {}
-	end
-
-	local content = f:read("*all")
-	f:close()
-
-	if content == "" then
-		return {}
-	end
-
-	local ok, data = pcall(vim.fn.json_decode, content)
-	if ok then
-		return data
-	end
-
-	return {}
-end
-
-local persistence = M.Persistence.new("arguments.json")
 local store = {}
 
-M.CustomArgument = {}
-M.CustomArgument.__index = M.CustomArgument
-
-function M.CustomArgument.new(text, active)
-	local self = setmetatable({}, M.CustomArgument)
-
-	self.text = text
-
-	self.active = active
-
-	return self
-end
-
-function M.CustomArgument:toggle_active()
-	self.active = not self.active
-
-	return self
-end
+local persistence = require("maven-test.store.persistence").Persistence.new("arguments.json")
+local CustomArgument = require("maven-test.store.custom_argument").CustomArgument
 
 local function _initialize_store()
 	local data = persistence:load()
 
 	for i, v in ipairs(data) do
-		table.insert(store, i, M.CustomArgument.new(v.text, v.active))
+		table.insert(store, i, CustomArgument.new(v.text, v.active))
 	end
 
 	_initialize_store = function() end
 end
 
-local function save_store()
+local function save()
 	_initialize_store()
 	persistence:save(store)
 end
@@ -118,7 +37,7 @@ function M.add(arg)
 	end
 
 	table.insert(store, 1, arg)
-	save_store()
+	save()
 end
 
 function M.update(arg)
@@ -130,7 +49,7 @@ function M.update(arg)
 		end
 	end
 
-	save_store()
+	save()
 end
 
 function M.remove(arg)
@@ -143,7 +62,7 @@ function M.remove(arg)
 		end
 	end
 
-	save_store()
+	save()
 end
 
 function M.get(index)
@@ -164,7 +83,7 @@ end
 function M.empty_store()
 	_initialize_store()
 	store = {}
-	save_store()
+	save()
 end
 
 return M

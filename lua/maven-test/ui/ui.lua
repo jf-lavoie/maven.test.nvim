@@ -3,6 +3,8 @@ local M = {}
 local config = require("maven-test").config
 local store_arg = require("maven-test.store.arguments")
 
+local CustomArgument = require("maven-test.store.custom_argument")
+
 M.width = math.floor(vim.o.columns * config.floating_window.width)
 M.height = math.floor(vim.o.lines * config.floating_window.height)
 M.row = math.floor((vim.o.lines - M.height) / 2)
@@ -153,7 +155,7 @@ function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg,
 	vim.keymap.set("n", "a", function()
 		bufWin:close()
 		M.show_command_editor("", function(arg)
-			onAddArg(store_arg.CustomArgument.new(arg, false))
+			onAddArg(CustomArgument.new(arg, false))
 		end, function()
 			M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg, onComplete)
 		end)
@@ -167,7 +169,7 @@ function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg,
 		M.show_command_editor(arg.text, function(updated)
 			if arg.text ~= updated then
 				onDeleteArg(arg)
-				onAddArg(store_arg.CustomArgument.new(updated, arg.active))
+				onAddArg(CustomArgument.new(updated, arg.active))
 			end
 		end, function()
 			M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg, onComplete)

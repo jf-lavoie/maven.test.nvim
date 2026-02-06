@@ -1,6 +1,6 @@
 local M = {}
 
-local ui = require("maven-test.ui")
+local ui = require("maven-test.ui.ui")
 
 local width = ui.width
 local total_height = ui.height
