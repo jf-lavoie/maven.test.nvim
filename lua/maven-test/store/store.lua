@@ -1,8 +1,5 @@
 local M = {}
 
-vim.print(
-	"jf-debug-> 'require(maven-test.store.persistence)': " .. vim.inspect(require("maven-test.store.persistence"))
-)
 local persistence = require("maven-test.store.persistence").Persistence.new("store.json")
 local store = {}
 
