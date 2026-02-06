@@ -1,7 +1,7 @@
 --- CustomArgument class for managing Maven command arguments
 --- Represents a custom Maven argument that can be toggled on/off
 --- and appended to Maven commands
---- @module maven-test.store.custom_argument
+--- @module 'maven-test.store.custom_argument'
 
 local M = {}
 

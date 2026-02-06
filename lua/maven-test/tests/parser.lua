@@ -1,7 +1,7 @@
 --- Java test parser using Treesitter
 --- Detects test methods and classes in Java files using treesitter queries
 --- Supports @Test and @ArchTest annotations
---- @module maven-test.tests.parser
+--- @module 'maven-test.tests.parser'
 
 local M = {}
 

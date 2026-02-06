@@ -1,7 +1,7 @@
 --- User command registration module
 --- Registers buffer-local commands for Java files via FileType autocmd
 --- Commands are only available in Java buffers for better performance
---- @module maven-test.user_commands
+--- @module 'maven-test.user_commands'
 
 --- Ensure the plugin is loaded before executing commands
 --- Calls setup() if the plugin hasn't been initialized yet

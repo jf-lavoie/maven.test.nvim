@@ -1,7 +1,7 @@
 --- Test selector UI with two-pane layout
 --- Top pane displays test actions (class and methods)
 --- Bottom pane shows command preview with active arguments
---- @module maven-test.tests.ui
+--- @module 'maven-test.tests.ui'
 
 local M = {}
 

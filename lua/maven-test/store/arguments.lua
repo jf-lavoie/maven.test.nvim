@@ -1,6 +1,6 @@
 --- Custom Maven arguments store module
 --- Manages storage and retrieval of custom Maven arguments that apply to all commands
---- @module maven-test.store.arguments
+--- @module 'maven-test.store.arguments'
 
 local M = {}
 
@@ -9,6 +9,12 @@ local store = {}
 
 local persistence = require("maven-test.store.persistence").Persistence.new("arguments.json")
 local CustomArgument = require("maven-test.store.custom_argument").CustomArgument
+
+--- @class CustomArgument
+--- @field text string The Maven argument text
+--- @field active boolean Whether this argument is currently active
+--- @field toggle_active fun(self: CustomArgument): CustomArgument
+--- @field append_to_command fun(self: CustomArgument, command: string): string
 
 --- Initialize the store by loading from disk
 --- Uses lazy initialization pattern - runs only once per session

@@ -1,7 +1,7 @@
 --- High-level orchestration functions for Maven test operations
 --- Coordinates between UI, store, and runner modules
 --- Manages store initialization and default command setup
---- @module maven-test.functions
+--- @module 'maven-test.functions'
 
 local M = {}
 

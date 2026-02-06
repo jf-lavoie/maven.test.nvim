@@ -1,6 +1,6 @@
 --- Maven test plugin initialization module
 --- Handles plugin setup, configuration, and guard against multiple loads
---- @module maven-test
+--- @module 'maven-test'
 
 if vim.g.loaded_maven_test then
 	return

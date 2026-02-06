@@ -1,7 +1,7 @@
 --- Persistence layer for store data
 --- Handles JSON serialization and file I/O for store data
 --- Creates data directory if it doesn't exist
---- @module maven-test.store.persistence
+--- @module 'maven-test.store.persistence'
 
 local M = {}
 

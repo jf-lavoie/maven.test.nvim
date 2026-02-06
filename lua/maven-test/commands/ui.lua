@@ -1,7 +1,7 @@
 --- Maven commands list UI
 --- Displays stored Maven commands in a floating window
 --- Allows running, editing, and deleting commands
---- @module maven-test.commands.ui
+--- @module 'maven-test.commands.ui'
 
 local M = {}
 

@@ -2,7 +2,7 @@
 --- Manages storage and retrieval of Maven command templates
 --- Store structure: { [key: string]: string[] }
 --- Commands are stored as arrays, with most recently used first
---- @module maven-test.store.store
+--- @module 'maven-test.store.store'
 
 local M = {}
 

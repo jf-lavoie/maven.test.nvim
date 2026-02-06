@@ -1,7 +1,7 @@
 --- Maven test runner module
 --- Executes Maven commands in Neovim terminal
 --- Handles command construction with package/class/method names
---- @module maven-test.runner.runner
+--- @module 'maven-test.runner.runner'
 
 local M = {}
 

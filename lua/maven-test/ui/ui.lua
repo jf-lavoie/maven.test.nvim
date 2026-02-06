@@ -1,6 +1,6 @@
 --- Core UI components for floating windows and editors
 --- Provides reusable FloatingWindow class and command editor functions
---- @module maven-test.ui.ui
+--- @module 'maven-test.ui.ui'
 
 local M = {}
 
@@ -64,7 +64,7 @@ end
 ---   win:close()
 function M.FloatingWindow:close()
 	if vim.api.nvim_buf_is_valid(self.buf) then
-		pcall(vim.api.nvim_buf_delete, self.bur, { force = true })
+		pcall(vim.api.nvim_buf_delete, self.buf, { force = true })
 	end
 	if vim.api.nvim_win_is_valid(self.win) then
 		pcall(vim.api.nvim_win_close, self.win, true)
