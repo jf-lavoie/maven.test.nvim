@@ -1,7 +1,7 @@
 local M = {}
 
-local store = require("maven-test.store")
-local store_arg = require("maven-test.store_arguments")
+local store = require("maven-test.store.store")
+local store_arg = require("maven-test.store.arguments")
 
 local RUN_ALL_KEY = "run_all"
 local RUN_CLASS_KEY = "run_class"

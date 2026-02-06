@@ -1,7 +1,7 @@
 local M = {}
 
 local config = require("maven-test").config
-local store_arg = require("maven-test.store_arguments")
+local store_arg = require("maven-test.store.arguments")
 
 M.width = math.floor(vim.o.columns * config.floating_window.width)
 M.height = math.floor(vim.o.lines * config.floating_window.height)

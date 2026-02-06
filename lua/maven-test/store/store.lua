@@ -1,15 +1,9 @@
 local M = {}
 
-local persistence = require("maven-test.store_persistence")
+local persistence = require("maven-test.store.persistence")
 local store = {}
--- local store_loaded = false
 
 local function _initialize_store()
-	-- if store_loaded then
-	-- 	return
-	-- end
-
-	-- store_loaded = true
 	store = persistence.load()
 	_initialize_store = function() end
 end

@@ -33,7 +33,7 @@ function M.setup(opts)
 
 	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
 
-	require("maven-test.store_persistence").setup(M.config.data_dir)
+	require("maven-test.store.persistence").setup(M.config.data_dir)
 	require("maven-test.commands")
 
 	vim.g.loaded_maven_test = 1
