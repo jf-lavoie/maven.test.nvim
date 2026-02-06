@@ -99,7 +99,7 @@ function M.show_command_editor(cmd, fctAddToStore, onComplete)
 	vim.api.nvim_buf_set_option(buf, "modifiable", true)
 end
 
-function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onComplete)
+function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg, onComplete)
 	local bufWin = M.FloatingWindow.new(
 		10,
 		160,
@@ -127,10 +127,18 @@ function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onComplete)
 		vim.api.nvim_buf_set_option(bufWin.buf, "modifiable", false)
 	end
 
+	local function getSelectedArg()
+		local index = vim.api.nvim_win_get_cursor(bufWin.win)[1]
+
+		local arg = getArgs()[index]
+
+		return arg
+	end
+
 	vim.api.nvim_win_set_option(
 		bufWin.win,
 		"winbar",
-		"%#StatusLine# <a> add an argument | <space> toggle activation | <esc>, <q> Quit"
+		"%#StatusLine# <space> toggle activation | <a> add | <u> update | <d> delete | <esc>, <q> Quit"
 	)
 
 	vim.keymap.set("n", "<Esc>", function()
@@ -147,17 +155,34 @@ function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onComplete)
 		M.show_command_editor("", function(arg)
 			onAddArg(store_arg.CustomArgument.new(arg, false))
 		end, function()
-			M.default_arguments_editor(getArgs, onAddArg, onComplete)
+			M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg, onComplete)
 		end)
 	end, { buffer = bufWin.buf, nowait = true })
 
+	vim.keymap.set("n", "u", function()
+		local arg = getSelectedArg()
+
+		bufWin:close()
+
+		M.show_command_editor(arg.text, function(updated)
+			if arg.text ~= updated then
+				onDeleteArg(arg)
+				onAddArg(store_arg.CustomArgument.new(updated, arg.active))
+			end
+		end, function()
+			M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg, onComplete)
+		end)
+	end, { buffer = bufWin.buf, nowait = true })
+
+	vim.keymap.set("n", "d", function()
+		local arg = getSelectedArg()
+		onDeleteArg(arg)
+		update_view()
+	end, { buffer = bufWin.buf, nowait = true })
+
 	vim.keymap.set("n", "<space>", function()
-		local index = vim.api.nvim_win_get_cursor(bufWin.win)[1]
-
-		local arg = getArgs()[index]
-
+		local arg = getSelectedArg()
 		arg:toggle_active()
-
 		onUpdateArg(arg)
 		update_view()
 	end, { buffer = bufWin.buf, nowait = true })
@@ -165,7 +190,6 @@ function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onComplete)
 	vim.api.nvim_create_autocmd("BufLeave", {
 		buffer = bufWin.buf,
 		callback = function()
-			vim.print("jf-debug-> 'bufWin': " .. vim.inspect(bufWin))
 			bufWin:close()
 		end,
 	})

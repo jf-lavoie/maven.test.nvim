@@ -90,13 +90,13 @@ end
 function M.show_custom_arguments()
 	_initialize()
 
-	require("maven-test.ui").default_arguments_editor(function()
-		return store_arg.list()
-	end, function(arg)
-		store_arg.add_to_store(arg)
-	end, function(arg)
-		store_arg.update(arg)
-	end, function() end)
+	require("maven-test.ui").default_arguments_editor(
+		store_arg.list,
+		store_arg.add_to_store,
+		store_arg.update,
+		store_arg.remove_from_store,
+		function() end
+	)
 end
 
 function M.run_test()
