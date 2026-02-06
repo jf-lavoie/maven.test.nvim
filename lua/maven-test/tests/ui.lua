@@ -51,7 +51,7 @@ CommandInfo.__index = CommandInfo
 --- @param commandDetails CommandDetail[] Array of command details
 --- @return CommandInfo
 function CommandInfo.new(fullyQualifiedName, commandDetails)
-	local self = setmetatable({}, FullyQualifiedName)
+	local self = setmetatable({}, CommandInfo)
 	self.fqn = fullyQualifiedName
 	self.commands = commandDetails
 	return self
