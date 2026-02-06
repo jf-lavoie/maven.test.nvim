@@ -24,17 +24,22 @@ local show_command_editor, _show_test_selector
 --- @class FullyQualifiedName
 --- @field text string The fully qualified test name (e.g., "com.example.Test#method")
 --- @field line number The line number where the test is defined
+--- @field is_current boolean Whether this test is the current one under the cursor
 local FullyQualifiedName = {}
 FullyQualifiedName.__index = FullyQualifiedName
 
---- Create a new FullyQualifiedName
---- @param text string The fully qualified name
---- @param line number The line number
---- @return FullyQualifiedName
-function FullyQualifiedName.new(text, line)
+--- Create a new FullyQualifiedName instance
+--- Constructs a test identifier object combining the fully qualified test name with its location
+--- @param text string The fully qualified test name (e.g., "com.example.TestClass#testMethod")
+--- @param line number The line number where the test is defined in the source file
+--- @param is_current boolean Whether this test is the current one under the cursor
+--- @return FullyQualifiedName A new instance with text, line, and is_current properties
+--- @usage local fqn = FullyQualifiedName.new("com.example.Test#myTest", 42, true)
+function FullyQualifiedName.new(text, line, is_current)
 	local self = setmetatable({}, FullyQualifiedName)
 	self.text = text
 	self.line = line
+	self.is_current = is_current
 	return self
 end
 
@@ -259,17 +264,20 @@ end
 --- Create fully qualified test names from package, class, and methods
 --- First entry is the test class, followed by individual test methods
 --- @param package_name string The Java package name
---- @param class table Table with 'name' and 'line' fields for the test class
+--- @param class table Table with 'name', 'is_current' and 'line' fields for the test class
 --- @param testMethods table[] Array of tables, each with 'name' and 'line' fields
 --- @return FullyQualifiedName[] Array of fully qualified name objects
 --- @private
 local function create_fully_qualified_names(package_name, class, testMethods)
 	local names = {}
 
-	table.insert(names, FullyQualifiedName.new(package_name .. "." .. class.name, class.line))
+	table.insert(names, FullyQualifiedName.new(package_name .. "." .. class.name, class.line, false))
 
 	for _, test in ipairs(testMethods) do
-		table.insert(names, FullyQualifiedName.new(package_name .. "." .. class.name .. "#" .. test.name, test.line))
+		table.insert(
+			names,
+			FullyQualifiedName.new(package_name .. "." .. class.name .. "#" .. test.name, test.line, test.is_current)
+		)
 	end
 	return names
 end
@@ -281,7 +289,19 @@ end
 --- @private
 local function create_fully_qualidfied_commands(fullyQualifiedNames, commands)
 	local fqnCommands = {}
-	for _, fqn in ipairs(fullyQualifiedNames) do
+
+	local localFullyQualifiedNames = fullyQualifiedNames
+
+	for i, fqn in ipairs(localFullyQualifiedNames) do
+		if fqn.is_current then
+			-- Move current test to the top of the list
+			table.remove(localFullyQualifiedNames, i)
+			table.insert(localFullyQualifiedNames, 1, fqn)
+			break
+		end
+	end
+
+	for _, fqn in ipairs(localFullyQualifiedNames) do
 		local cmds = {}
 		for _, cmdFormat in ipairs(commands) do
 			table.insert(cmds, CommandDetail.new(get_maven_command(cmdFormat, fqn.text), cmdFormat))

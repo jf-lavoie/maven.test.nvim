@@ -8,14 +8,16 @@ local M = {}
 --- Get all test methods in the current buffer
 --- Searches for methods annotated with @Test or @ArchTest
 --- Also finds @ArchTest annotated fields (ArchUnit test rules)
---- @return table[] Array of test objects, each with: { name: string, line: number, type: "method" }
+--- @return table[] Array of test objects, each with: { name: string, line: number, type: "method", is_current: boolean }
 --- @usage
 ---   local tests = parser.get_test_methods()
 ---   for _, test in ipairs(tests) do
----     print(test.name .. " at line " .. test.line)
+---     print(test.name .. " at line " .. test.line .. (test.is_current and " (current)" or ""))
 ---   end
 function M.get_test_methods()
 	local bufnr = vim.api.nvim_get_current_buf()
+	local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
+	vim.print("jf-debug-> 'cursor_line': " .. tostring(cursor_line))
 	local parser = vim.treesitter.get_parser(bufnr, "java")
 	if not parser then
 		return {}
@@ -37,16 +39,30 @@ function M.get_test_methods()
   ]]
 	)
 
+	local seen_methods = {}
 	for id, node in query:iter_captures(root, bufnr, 0, -1) do
 		local name = query.captures[id]
-		if name == "method.name" then
-			local method_name = vim.treesitter.get_node_text(node, bufnr)
-			local start_row, _, _, _ = node:range()
-			table.insert(tests, {
-				name = method_name,
-				line = start_row + 1,
-				type = "method",
-			})
+		if name == "method" then
+			-- Get the method name from the node
+			local method_name = nil
+			for child in node:iter_children() do
+				if child:type() == "identifier" then
+					method_name = vim.treesitter.get_node_text(child, bufnr)
+					break
+				end
+			end
+
+			if method_name and not seen_methods[method_name] then
+				seen_methods[method_name] = true
+				local method_start_row, _, method_end_row, _ = node:range()
+				local is_current = cursor_line >= (method_start_row + 1) and cursor_line <= (method_end_row + 1)
+				table.insert(tests, {
+					name = method_name,
+					line = method_start_row + 1,
+					type = "method",
+					is_current = is_current,
+				})
+			end
 		end
 	end
 
@@ -62,16 +78,30 @@ function M.get_test_methods()
   ]]
 	)
 
+	local seen_archtest_methods = {}
 	for id, node in query_archtest:iter_captures(root, bufnr, 0, -1) do
 		local name = query_archtest.captures[id]
-		if name == "method.name" then
-			local method_name = vim.treesitter.get_node_text(node, bufnr)
-			local start_row, _, _, _ = node:range()
-			table.insert(tests, {
-				name = method_name,
-				line = start_row + 1,
-				type = "method",
-			})
+		if name == "method" then
+			-- Get the method name from the node
+			local method_name = nil
+			for child in node:iter_children() do
+				if child:type() == "identifier" then
+					method_name = vim.treesitter.get_node_text(child, bufnr)
+					break
+				end
+			end
+
+			if method_name and not seen_archtest_methods[method_name] then
+				seen_archtest_methods[method_name] = true
+				local method_start_row, _, method_end_row, _ = node:range()
+				local is_current = cursor_line >= (method_start_row + 1) and cursor_line <= (method_end_row + 1)
+				table.insert(tests, {
+					name = method_name,
+					line = method_start_row + 1,
+					type = "method",
+					is_current = is_current,
+				})
+			end
 		end
 	end
 
@@ -88,16 +118,35 @@ function M.get_test_methods()
   ]]
 	)
 
+	local seen_archtest_fields = {}
 	for id, node in query_archtest_field:iter_captures(root, bufnr, 0, -1) do
 		local name = query_archtest_field.captures[id]
-		if name == "field.name" then
-			local field_name = vim.treesitter.get_node_text(node, bufnr)
-			local start_row, _, _, _ = node:range()
-			table.insert(tests, {
-				name = field_name,
-				line = start_row + 1,
-				type = "method", -- Note: fields are also marked as "method" for consistency
-			})
+		if name == "field" then
+			-- Get the field name from the variable_declarator
+			local field_name = nil
+			for child in node:iter_children() do
+				if child:type() == "variable_declarator" then
+					for subchild in child:iter_children() do
+						if subchild:type() == "identifier" then
+							field_name = vim.treesitter.get_node_text(subchild, bufnr)
+							break
+						end
+					end
+					break
+				end
+			end
+
+			if field_name and not seen_archtest_fields[field_name] then
+				seen_archtest_fields[field_name] = true
+				local field_start_row, _, field_end_row, _ = node:range()
+				local is_current = cursor_line >= (field_start_row + 1) and cursor_line <= (field_end_row + 1)
+				table.insert(tests, {
+					name = field_name,
+					line = field_start_row + 1,
+					type = "method", -- Note: fields are also marked as "method" for consistency
+					is_current = is_current,
+				})
+			end
 		end
 	end
 
