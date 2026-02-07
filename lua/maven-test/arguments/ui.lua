@@ -137,4 +137,20 @@ function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg,
 	})
 	update_view()
 end
+
+--- Show custom arguments editor UI
+--- External callers that wants to access the module without knowing the internal structure
+--- Opens a floating window to manage custom Maven arguments
+--- Displays arguments with activation status (🟢 active, 🔴 inactive)
+--- Supports adding, editing, deleting, and toggling arguments
+--- @param onComplete function Callback function called when editor is closed
+--- @usage
+---   default_arguments_editor(
+---     function() print("Closed") end
+---   )
+function M.external_default_arguments_editor(onComplete)
+	local store = require("maven-test.arguments.store")
+
+	M.default_arguments_editor(store.list, store.add, store.update, store.remove, onComplete)
+end
 return M

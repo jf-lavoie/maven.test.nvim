@@ -117,6 +117,14 @@ function M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore)
 		update_view(bufWin, getCommands)
 	end, { buffer = bufWin.buf, nowait = true })
 
+	vim.keymap.set("n", "a", function()
+		bufWin:close()
+
+		require("maven-test.arguments.ui").external_default_arguments_editor(function()
+			M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore)
+		end)
+	end, { buffer = bufWin.buf, nowait = true })
+
 	-- Edit selected command
 	vim.keymap.set("n", "m", function()
 		local cmd = getSelectedCmd(bufWin, getCommands)
@@ -132,7 +140,7 @@ function M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore)
 	vim.api.nvim_win_set_option(
 		bufWin.win,
 		"winbar",
-		"%#StatusLine#<CR>, <space> Run command | <m> modify command | <d> delete command | <q> Quit"
+		"%#StatusLine#<CR>, <space> Run command | <m> modify command | <a> show custom arguments | <d> delete command | <q> Quit"
 	)
 end
 

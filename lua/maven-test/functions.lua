@@ -111,13 +111,7 @@ end
 function M.show_custom_arguments()
 	_initialize()
 
-	require("maven-test.arguments.ui").default_arguments_editor(
-		store_arg.list,
-		store_arg.add,
-		store_arg.update,
-		store_arg.remove,
-		function() end
-	)
+	require("maven-test.arguments.ui").external_default_arguments_editor(function() end)
 end
 
 --- Show test selector UI for running a specific test method
