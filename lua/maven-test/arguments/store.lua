@@ -8,7 +8,7 @@ local M = {}
 local store = {}
 
 local persistence = require("maven-test.store.persistence").Persistence.new("arguments.json")
-local CustomArgument = require("maven-test.store.custom_argument").CustomArgument
+local CustomArgument = require("maven-test.arguments.argument").CustomArgument
 
 --- @class CustomArgument
 --- @field text string The Maven argument text

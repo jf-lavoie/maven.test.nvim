@@ -31,7 +31,7 @@ end
 ---   runner.run_command("mvn test")
 ---   runner.run_command("mvn test -Dtest=com.example.MyTest#testMethod")
 function M.run_command(command)
-	local customArguments = require("maven-test.store.arguments")
+	local customArguments = require("maven-test.arguments.store")
 
 	for _, arg in ipairs(customArguments.list()) do
 		if arg.active then

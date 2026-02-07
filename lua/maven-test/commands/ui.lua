@@ -30,7 +30,7 @@ end
 local function update_view(bufWin, getCommands)
 	local cmds = {}
 
-	local customArguments = require("maven-test.store.arguments")
+	local customArguments = require("maven-test.arguments.store")
 
 	for index, value in ipairs(getCommands()) do
 		-- Sanitize command for display (escape special characters)

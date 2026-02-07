@@ -5,8 +5,8 @@
 
 local M = {}
 
-local store = require("maven-test.store.store")
-local store_arg = require("maven-test.store.arguments")
+local store = require("maven-test.commands.store")
+local store_arg = require("maven-test.arguments.store")
 
 --- Store keys for different command types
 local RUN_ALL_KEY = "run_all"
@@ -111,7 +111,7 @@ end
 function M.show_custom_arguments()
 	_initialize()
 
-	require("maven-test.ui.ui").default_arguments_editor(
+	require("maven-test.arguments.ui").default_arguments_editor(
 		store_arg.list,
 		store_arg.add,
 		store_arg.update,

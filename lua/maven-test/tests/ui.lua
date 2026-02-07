@@ -211,7 +211,7 @@ local function update_preview(actionsWin, commandsWin, fqnCommands)
 	if line <= #fqnCommands then
 		local fqn = fqnCommands[line]
 
-		local customArguments = require("maven-test.store.arguments")
+		local customArguments = require("maven-test.arguments.store")
 
 		for index, value in ipairs(fqn.commands) do
 			local t = value:toPreviewString()
