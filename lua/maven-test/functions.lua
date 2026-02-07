@@ -175,10 +175,18 @@ end
 --- Restore command store to default state
 --- Clears all stored commands and re-adds default commands
 --- Useful for resetting to a known good state
-function M.restore_store()
+function M.restore_commands_store()
 	_initialize()
 	store.empty_store()
 	_default_commands()
+end
+
+--- Restore arguments store to default state
+--- Clears all stored arguments and re-adds default arguments
+--- Useful for resetting to a known good state
+function M.restore_arguments_store()
+	_initialize()
+	store_arg.empty_store()
 end
 
 return M

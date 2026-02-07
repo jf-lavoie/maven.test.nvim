@@ -52,7 +52,7 @@ vim.api.nvim_create_autocmd("FileType", {
 		-- Management commands
 		vim.api.nvim_buf_create_user_command(args.buf, "MavenTestRestoreCommandsStore", function()
 			ensure_loaded()
-			require("maven-test.functions").restore_store()
+			require("maven-test.functions").restore_commands_store()
 		end, { desc = "Restore stored commands" })
 
 		vim.api.nvim_buf_create_user_command(args.buf, "MavenTestCommands", function()
@@ -60,9 +60,15 @@ vim.api.nvim_create_autocmd("FileType", {
 			require("maven-test.functions").commands()
 		end, { desc = "Show commands" })
 
+		-- Management arguments
 		vim.api.nvim_buf_create_user_command(args.buf, "MavenTestCustomArguments", function()
 			ensure_loaded()
 			require("maven-test.functions").show_custom_arguments()
 		end, { desc = "Show custom arguments" })
+
+		vim.api.nvim_buf_create_user_command(args.buf, "MavenTestRestoreArgumentStore", function()
+			ensure_loaded()
+			require("maven-test.functions").restore_arguments_store()
+		end, { desc = "Restore stored commands" })
 	end,
 })
