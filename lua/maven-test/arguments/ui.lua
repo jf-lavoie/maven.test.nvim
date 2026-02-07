@@ -62,14 +62,24 @@ function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg,
 	end
 
 	--- Get the argument at the current cursor position
-	--- @return Argument The selected argument
+	--- Retrieves the Argument object corresponding to the line where the cursor is positioned.
+	--- If the cursor is beyond the arguments list, returns the last argument.
+	--- @return Argument|nil The selected Argument object, or nil if no arguments exist
 	--- @private
 	local function getSelectedArg()
 		local index = vim.api.nvim_win_get_cursor(bufWin.win)[1]
 
-		local arg = getArgs()[index]
+		local args = getArgs()
 
-		return arg
+		if #args < 1 then
+			return nil
+		end
+
+		if index > #args then
+			index = #args
+		end
+
+		return args[index]
 	end
 
 	vim.api.nvim_win_set_option(
@@ -102,6 +112,10 @@ function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg,
 	vim.keymap.set("n", "u", function()
 		local arg = getSelectedArg()
 
+		if not arg then
+			return
+		end
+
 		bufWin:close()
 
 		M.show_command_editor(arg.text, function(updated)
@@ -117,6 +131,10 @@ function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg,
 	-- Delete selected argument
 	vim.keymap.set("n", "d", function()
 		local arg = getSelectedArg()
+
+		if not arg then
+			return
+		end
 		onDeleteArg(arg)
 		update_view()
 	end, { buffer = bufWin.buf, nowait = true })
@@ -124,6 +142,10 @@ function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg,
 	-- Toggle argument activation
 	vim.keymap.set("n", "<space>", function()
 		local arg = getSelectedArg()
+
+		if not arg then
+			return
+		end
 		arg:toggle_active()
 		onUpdateArg(arg)
 		update_view()
