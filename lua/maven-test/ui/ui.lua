@@ -6,7 +6,7 @@ local M = {}
 
 local config = require("maven-test").config
 
-local CustomArgument = require("maven-test.arguments.argument").CustomArgument
+local CustomArgument = require("maven-test.arguments.argument").Argument
 
 --- Default window dimensions based on configuration
 M.width = math.floor(vim.o.columns * config.floating_window.width)

@@ -4,17 +4,17 @@
 
 local M = {}
 
---- In-memory store for CustomArgument objects
+--- In-memory store for Argument objects
 local store = {}
 
 local persistence = require("maven-test.store.persistence").Persistence.new("arguments.json")
-local CustomArgument = require("maven-test.arguments.argument").CustomArgument
+local Argument = require("maven-test.arguments.argument").Argument
 
---- @class CustomArgument
+--- @class Argument
 --- @field text string The Maven argument text
 --- @field active boolean Whether this argument is currently active
---- @field toggle_active fun(self: CustomArgument): CustomArgument
---- @field append_to_command fun(self: CustomArgument, command: string): string
+--- @field toggle_active fun(self: Argument): Argument
+--- @field append_to_command fun(self: Argument, command: string): string
 
 --- Initialize the store by loading from disk
 --- Uses lazy initialization pattern - runs only once per session
@@ -24,7 +24,7 @@ local function _initialize_store()
 	local data = persistence:load()
 
 	for i, v in ipairs(data) do
-		table.insert(store, i, CustomArgument.new(v.text, v.active))
+		table.insert(store, i, Argument.new(v.text, v.active))
 	end
 
 	_initialize_store = function() end
@@ -48,9 +48,9 @@ end
 --- Arguments are inserted at the front of the list (most recently added first)
 --- Duplicate arguments (same text) are not added (idempotent operation)
 --- Automatically persists to disk after addition
---- @param arg CustomArgument The argument object to add
+--- @param arg Argument The argument object to add
 --- @usage
----   local arg = CustomArgument.new("-X", true)
+---   local arg = Argument.new("-X", true)
 ---   arguments.add(arg)
 function M.add(arg)
 	_initialize_store()
@@ -68,9 +68,9 @@ end
 --- Update an existing argument's properties (typically the active state)
 --- Finds the argument by text and updates its active flag
 --- Automatically persists to disk after update
---- @param arg CustomArgument The argument object with updated properties
+--- @param arg Argument The argument object with updated properties
 --- @usage
----   local arg = CustomArgument.new("-X", false)  -- Deactivate the -X flag
+---   local arg = Argument.new("-X", false)  -- Deactivate the -X flag
 ---   arguments.update(arg)
 function M.update(arg)
 	_initialize_store()
@@ -87,9 +87,9 @@ end
 --- Remove an argument from the store
 --- Finds and removes the first argument matching the given text
 --- Automatically persists to disk after removal
---- @param arg CustomArgument The argument object to remove (matched by text field)
+--- @param arg Argument The argument object to remove (matched by text field)
 --- @usage
----   local arg = CustomArgument.new("-X", true)
+---   local arg = Argument.new("-X", true)
 ---   arguments.remove(arg)
 function M.remove(arg)
 	_initialize_store()
@@ -106,7 +106,7 @@ end
 
 --- Get a specific argument by index
 --- @param index number The 1-based index of the argument
---- @return CustomArgument|table The argument at the given index, or empty table if not found
+--- @return Argument|table The argument at the given index, or empty table if not found
 --- @usage
 ---   local first_arg = arguments.get(1)
 function M.get(index)
@@ -116,7 +116,7 @@ end
 
 --- Get a shallow copy of all arguments in the store
 --- Returns a copy to prevent external modification of the internal store
---- @return CustomArgument[] Array of all CustomArgument objects
+--- @return Argument[] Array of all Argument objects
 --- @usage
 ---   local all_args = arguments.list()
 ---   for _, arg in ipairs(all_args) do

@@ -1,6 +1,6 @@
 local M = {}
 
-local CustomArgument = require("maven-test.arguments.argument").CustomArgument
+local Argument = require("maven-test.arguments.argument").Argument
 
 local ui = require("maven-test.ui.ui")
 
@@ -8,7 +8,7 @@ local ui = require("maven-test.ui.ui")
 --- Opens a floating window to manage custom Maven arguments
 --- Displays arguments with activation status (🟢 active, 🔴 inactive)
 --- Supports adding, editing, deleting, and toggling arguments
---- @param getArgs function Function that returns array of CustomArgument objects
+--- @param getArgs function Function that returns array of Argument objects
 --- @param onAddArg function Callback function(arg) to add a new argument
 --- @param onUpdateArg function Callback function(arg) to update an argument
 --- @param onDeleteArg function Callback function(arg) to delete an argument
@@ -35,8 +35,9 @@ function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg,
 	--- Displays arguments with colored status indicators
 	--- @private
 	local function update_view()
+		local row = vim.api.nvim_win_get_cursor(bufWin.win)[1]
+
 		vim.api.nvim_buf_set_option(bufWin.buf, "modifiable", true)
-		vim.api.nvim_buf_set_lines(bufWin.buf, 0, 1, true, {})
 
 		local splittedLines = {}
 		local args = getArgs()
@@ -48,12 +49,20 @@ function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg,
 			table.insert(splittedLines, line .. arg.text)
 		end
 
-		vim.api.nvim_buf_set_lines(bufWin.buf, 0, 1, true, splittedLines)
+		vim.api.nvim_buf_set_lines(bufWin.buf, 0, -1, true, splittedLines)
 		vim.api.nvim_buf_set_option(bufWin.buf, "modifiable", false)
+
+		if row > #args then
+			row = #args
+		end
+		if row < 1 then
+			row = 1
+		end
+		vim.api.nvim_win_set_cursor(bufWin.win, { row, 0 })
 	end
 
 	--- Get the argument at the current cursor position
-	--- @return CustomArgument The selected argument
+	--- @return Argument The selected argument
 	--- @private
 	local function getSelectedArg()
 		local index = vim.api.nvim_win_get_cursor(bufWin.win)[1]
@@ -83,7 +92,7 @@ function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg,
 	vim.keymap.set("n", "a", function()
 		bufWin:close()
 		ui.show_command_editor("", function(arg)
-			onAddArg(CustomArgument.new(arg, false))
+			onAddArg(Argument.new(arg, false))
 		end, function()
 			M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg, onComplete)
 		end)
@@ -98,7 +107,7 @@ function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg,
 		M.show_command_editor(arg.text, function(updated)
 			if arg.text ~= updated then
 				onDeleteArg(arg)
-				onAddArg(CustomArgument.new(updated, arg.active))
+				onAddArg(Argument.new(updated, arg.active))
 			end
 		end, function()
 			M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg, onComplete)
