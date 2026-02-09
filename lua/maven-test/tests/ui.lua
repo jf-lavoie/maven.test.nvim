@@ -179,7 +179,7 @@ local function get_package_name()
 	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, 50, false)
 
 	for _, line in ipairs(lines) do
-		local package = line:match("^package%s+([%w%.]+)")
+		local package = line:match("^package%s+([%w%._]+)")
 		if package then
 			return package
 		end
