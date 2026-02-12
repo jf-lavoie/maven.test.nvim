@@ -49,7 +49,7 @@ local function _default_commands()
 		store.add(
 			RUN_CLASS_DEBUG_KEY,
 			options.maven_command
-				.. ' test -Dtest=%s -Dmaven.surefire.debug"-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address='
+				.. ' test -Dtest=%s -Dmaven.surefire.debug="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address='
 				.. options.debug_port
 				.. '"'
 		)
@@ -58,7 +58,7 @@ local function _default_commands()
 		store.add(
 			RUN_METHOD_DEBUG_KEY,
 			options.maven_command
-				.. ' test -Dtest=%s -Dmaven.surefire.debug"-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address='
+				.. ' test -Dtest=%s -Dmaven.surefire.debug="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address='
 				.. options.debug_port
 				.. '"'
 		)
