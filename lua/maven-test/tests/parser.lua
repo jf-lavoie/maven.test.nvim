@@ -17,7 +17,6 @@ local M = {}
 function M.get_test_methods()
 	local bufnr = vim.api.nvim_get_current_buf()
 	local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
-	vim.print("jf-debug-> 'cursor_line': " .. tostring(cursor_line))
 	local parser = vim.treesitter.get_parser(bufnr, "java")
 	if not parser then
 		return {}
