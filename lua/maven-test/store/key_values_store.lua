@@ -116,6 +116,27 @@ function M.KeyValueStore:first(key)
 	return self.store[key][1]
 end
 
+--- Get the element at [key] that has value 'value' and moves it to the front of the list (most recently used)
+--- @param key string The store key
+--- @param value string the command to move to the front of the list
+--- @usage
+---   local cmd = store.move_first("run_method", "echo hello")
+function M.KeyValueStore:move_first(key, value)
+	self:_initialize_store()
+	if not self.store[key] then
+		return
+	end
+
+	for i, v in ipairs(self.store[key]) do
+		if v == value then
+			table.remove(self.store[key], i)
+			table.insert(self.store[key], 1, value)
+			self:save()
+			break
+		end
+	end
+end
+
 --- Get all commands for a key
 --- Returns an empty table if the key doesn't exist (non-nil guarantee)
 --- @param key string The store key

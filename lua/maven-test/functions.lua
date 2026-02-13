@@ -5,7 +5,7 @@
 
 local M = {}
 
-local store = require("maven-test.commands.store")
+local store_cmds = require("maven-test.commands.store")
 local store_arg = require("maven-test.arguments.store")
 
 --- Store keys for different command types
@@ -27,17 +27,17 @@ local initialized = false
 local function _default_commands()
 	local options = require("maven-test").config
 
-	if #store:get(RUN_ALL_KEY) == 0 then
-		store:add(RUN_ALL_KEY, options.maven_command .. " test")
+	if #store_cmds:get(RUN_ALL_KEY) == 0 then
+		store_cmds:add(RUN_ALL_KEY, options.maven_command .. " test")
 	end
-	if #store:get(RUN_CLASS_KEY) == 0 then
-		store:add(RUN_CLASS_KEY, options.maven_command .. " test -Dtest=%s")
+	if #store_cmds:get(RUN_CLASS_KEY) == 0 then
+		store_cmds:add(RUN_CLASS_KEY, options.maven_command .. " test -Dtest=%s")
 	end
-	if #store:get(RUN_METHOD_KEY) == 0 then
-		store:add(RUN_METHOD_KEY, options.maven_command .. " test -Dtest=%s")
+	if #store_cmds:get(RUN_METHOD_KEY) == 0 then
+		store_cmds:add(RUN_METHOD_KEY, options.maven_command .. " test -Dtest=%s")
 	end
-	if #store:get(RUN_ALL_DEBUG_KEY) == 0 then
-		store:add(
+	if #store_cmds:get(RUN_ALL_DEBUG_KEY) == 0 then
+		store_cmds:add(
 			RUN_ALL_DEBUG_KEY,
 			options.maven_command
 				.. ' test -Dmaven.surefire.debug="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address='
@@ -45,8 +45,8 @@ local function _default_commands()
 				.. '"'
 		)
 	end
-	if #store:get(RUN_CLASS_DEBUG_KEY) == 0 then
-		store:add(
+	if #store_cmds:get(RUN_CLASS_DEBUG_KEY) == 0 then
+		store_cmds:add(
 			RUN_CLASS_DEBUG_KEY,
 			options.maven_command
 				.. ' test -Dtest=%s -Dmaven.surefire.debug="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address='
@@ -54,8 +54,8 @@ local function _default_commands()
 				.. '"'
 		)
 	end
-	if #store:get(RUN_METHOD_DEBUG_KEY) == 0 then
-		store:add(
+	if #store_cmds:get(RUN_METHOD_DEBUG_KEY) == 0 then
+		store_cmds:add(
 			RUN_METHOD_DEBUG_KEY,
 			options.maven_command
 				.. ' test -Dtest=%s -Dmaven.surefire.debug="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address='
@@ -64,16 +64,16 @@ local function _default_commands()
 		)
 	end
 
-	if #store:get(COMMANDS) == 0 then
-		store:add(COMMANDS, options.maven_command .. " site")
-		store:add(COMMANDS, options.maven_command .. " clean")
-		store:add(COMMANDS, options.maven_command .. " deploy")
-		store:add(COMMANDS, options.maven_command .. " install")
-		store:add(COMMANDS, options.maven_command .. " verify")
-		store:add(COMMANDS, options.maven_command .. " package")
-		store:add(COMMANDS, options.maven_command .. " test")
-		store:add(COMMANDS, options.maven_command .. " compile")
-		store:add(COMMANDS, options.maven_command .. " validate")
+	if #store_cmds:get(COMMANDS) == 0 then
+		store_cmds:add(COMMANDS, options.maven_command .. " site")
+		store_cmds:add(COMMANDS, options.maven_command .. " clean")
+		store_cmds:add(COMMANDS, options.maven_command .. " deploy")
+		store_cmds:add(COMMANDS, options.maven_command .. " install")
+		store_cmds:add(COMMANDS, options.maven_command .. " verify")
+		store_cmds:add(COMMANDS, options.maven_command .. " package")
+		store_cmds:add(COMMANDS, options.maven_command .. " test")
+		store_cmds:add(COMMANDS, options.maven_command .. " compile")
+		store_cmds:add(COMMANDS, options.maven_command .. " validate")
 	end
 end
 
@@ -98,11 +98,17 @@ function M.commands()
 	_initialize()
 
 	require("maven-test.commands.ui").show_commands(function()
-		return store:get(COMMANDS)
+		return store_cmds:get(COMMANDS)
 	end, function(value)
-		store:remove(COMMANDS, value)
+		store_cmds:remove(COMMANDS, value)
 	end, function(value)
-		store:add(COMMANDS, value)
+		store_cmds:add(COMMANDS, value)
+	end, function(cmd)
+		store_cmds:move_first(COMMANDS, cmd)
+
+		local runner = require("maven-test.runner.runner")
+
+		runner.run_command(cmd)
 	end)
 end
 
@@ -119,11 +125,11 @@ end
 function M.run_test()
 	_initialize()
 	require("maven-test.tests.ui").show_test_selector(function()
-		return store:get(RUN_METHOD_KEY)
+		return store_cmds:get(RUN_METHOD_KEY)
 	end, function(value)
-		store:remove(RUN_METHOD_KEY, value)
+		store_cmds:remove(RUN_METHOD_KEY, value)
 	end, function(value)
-		store:add(RUN_METHOD_KEY, value)
+		store_cmds:add(RUN_METHOD_KEY, value)
 	end)
 end
 
@@ -131,7 +137,7 @@ end
 --- Uses the first stored command template for running test classes
 function M.run_test_class()
 	_initialize()
-	local cmd = store:first(RUN_CLASS_KEY)
+	local cmd = store_cmds:first(RUN_CLASS_KEY)
 	require("maven-test.runner.runner").run_test_class(cmd)
 end
 
@@ -139,7 +145,7 @@ end
 --- Uses the first stored command for running all tests
 function M.run_all_tests()
 	_initialize()
-	local cmd = store:first(RUN_ALL_KEY)
+	local cmd = store_cmds:first(RUN_ALL_KEY)
 	require("maven-test.runner.runner").run_all_tests(cmd)
 end
 
@@ -148,11 +154,11 @@ end
 function M.run_test_debug()
 	_initialize()
 	require("maven-test.tests.ui").show_test_selector(function()
-		return store:get(RUN_METHOD_DEBUG_KEY)
+		return store_cmds:get(RUN_METHOD_DEBUG_KEY)
 	end, function(value)
-		store:remove(RUN_METHOD_DEBUG_KEY, value)
+		store_cmds:remove(RUN_METHOD_DEBUG_KEY, value)
 	end, function(value)
-		store:add(RUN_METHOD_DEBUG_KEY, value)
+		store_cmds:add(RUN_METHOD_DEBUG_KEY, value)
 	end)
 end
 
@@ -160,7 +166,7 @@ end
 --- Uses the first stored debug command template for test classes
 function M.run_test_class_debug()
 	_initialize()
-	local cmd = store:first(RUN_CLASS_DEBUG_KEY)
+	local cmd = store_cmds:first(RUN_CLASS_DEBUG_KEY)
 	require("maven-test.runner.runner").run_test_class(cmd)
 end
 
@@ -168,7 +174,7 @@ end
 --- Uses the first stored debug command for all tests
 function M.run_all_tests_debug()
 	_initialize()
-	local cmd = store:first(RUN_ALL_DEBUG_KEY)
+	local cmd = store_cmds:first(RUN_ALL_DEBUG_KEY)
 	require("maven-test.runner.runner").run_all_tests(cmd)
 end
 
@@ -177,7 +183,7 @@ end
 --- Useful for resetting to a known good state
 function M.restore_commands_store()
 	_initialize()
-	store:empty_store()
+	store_cmds:empty_store()
 	_default_commands()
 end
 
