@@ -104,7 +104,7 @@ function M.default_arguments_editor(getArgs, onAddArg, onUpdateArg, onDeleteArg,
 
 		bufWin:close()
 
-		M.show_command_editor(arg.text, function(updated)
+		ui.show_command_editor(arg.text, function(updated)
 			if arg.text ~= updated then
 				onDeleteArg(arg)
 				onAddArg(Argument.new(updated, arg.active))
