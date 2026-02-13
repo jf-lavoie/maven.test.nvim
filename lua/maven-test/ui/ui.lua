@@ -107,7 +107,7 @@ function M.show_command_editor(cmd, fctAddToStore, onComplete)
 
 	local buf = bufWin.buf
 
-	vim.api.nvim_win_set_option(bufWin.win, "winbar", "%#StatusLine#<CR> normal mode: save command | <esc>, <q> Quit")
+	vim.api.nvim_win_set_option(bufWin.win, "winbar", "%#StatusLine# normal mode: <CR> save command | <esc>, <q> Quit")
 
 	vim.keymap.set("n", "<Esc>", function()
 		bufWin:close()
@@ -142,6 +142,7 @@ function M.show_command_editor(cmd, fctAddToStore, onComplete)
 
 	vim.api.nvim_buf_set_lines(buf, 0, 1, true, splittedLines)
 	vim.api.nvim_buf_set_option(buf, "modifiable", true)
+	vim.cmd("startinsert")
 end
 
 return M

@@ -6,21 +6,11 @@
 local M = {}
 
 local ui = require("maven-test.ui.ui")
-local runner = require("maven-test.runner.runner")
 
 local width = ui.width
 local height = ui.height
 local row = ui.row
 local col = ui.col
-
---- Run a command and close the UI window
---- @param bufWin FloatingWindow The window to close
---- @param cmd string The Maven command to run
---- @private
-local function run_command(bufWin, cmd)
-	bufWin:close()
-	runner.run_command(cmd)
-end
 
 --- Update the view with current commands list
 --- Applies active custom arguments to each command in the preview
@@ -71,13 +61,15 @@ end
 --- @param getCommands function Function that returns array of command strings
 --- @param fctDeleteFromStore function Callback function(cmd) to delete a command
 --- @param fctAddToStore function Callback function(cmd) to add/update a command
+--- @param fctOnSelected function Callback function(cmd) called when a command is selected/executed
 --- @usage
 ---   show_commands(
 ---     function() return store.get("commands") end,
 ---     function(cmd) store.remove("commands", cmd) end,
----     function(cmd) store.add("commands", cmd) end
+---     function(cmd) store.add("commands", cmd) end,
+---     function(cmd) runner.run(cmd) end
 ---   )
-function M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore)
+function M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore, fctOnSelected)
 	local bufWin = ui.FloatingWindow.new(height, width, row, col, true, "sh")
 
 	-- Auto-close when switching windows
@@ -102,11 +94,15 @@ function M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore)
 
 	-- Run selected command
 	vim.keymap.set("n", "<Space>", function()
-		run_command(bufWin, getSelectedCmd(bufWin, getCommands))
+		local cmd = getSelectedCmd(bufWin, getCommands)
+		bufWin:close()
+		fctOnSelected(cmd)
 	end, { buffer = bufWin.buf, nowait = true })
 
 	vim.keymap.set("n", "<CR>", function()
-		run_command(bufWin, getSelectedCmd(bufWin, getCommands))
+		local cmd = getSelectedCmd(bufWin, getCommands)
+		bufWin:close()
+		fctOnSelected(cmd)
 	end, { buffer = bufWin.buf, nowait = true })
 
 	-- Delete selected command
