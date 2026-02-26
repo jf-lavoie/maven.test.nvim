@@ -43,7 +43,8 @@ function M.run_command(command)
 
 	-- Open a new terminal split
 	vim.cmd("botright split | enew")
-	local lCmd = 'echo "$ ' .. command .. '" && ' .. command
+	-- TODO: fix command for all escapes (e.g., single quotes, backticks)
+	local lCmd = 'echo "$ ' .. command:gsub('"', '\\"') .. '" && ' .. command:gsub('"', '\\"')
 	vim.fn.jobstart(lCmd, { term = true })
 	vim.cmd("startinsert")
 end
