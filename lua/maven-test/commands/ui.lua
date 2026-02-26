@@ -117,7 +117,7 @@ function M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore, fctOnSe
 		bufWin:close()
 
 		require("maven-test.arguments.ui").external_default_arguments_editor(function()
-			M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore)
+			M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore, fctOnSelected)
 		end)
 	end, { buffer = bufWin.buf, nowait = true })
 
@@ -127,7 +127,7 @@ function M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore, fctOnSe
 		bufWin:close()
 
 		ui.show_command_editor(cmd, fctAddToStore, function()
-			M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore)
+			M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore, fctOnSelected)
 		end)
 	end, { buffer = bufWin.buf, nowait = true })
 
