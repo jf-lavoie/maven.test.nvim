@@ -34,6 +34,16 @@ end
 --- @field floating_window.border string Border style (default: "rounded")
 --- @field debug_port number Port for Maven Surefire debug mode (default: 5005)
 --- @field data_dir string Directory for storing command data (auto-generated per project)
+--- @field projects table Project detection configuration for different build systems
+--- @field projects.maven table Maven project configuration
+--- @field projects.maven.root_markers string[] Files indicating a Maven project root (default: {"pom.xml"})
+--- @field projects.maven.type string Project language type (default: "java")
+--- @field projects.gradle table Gradle project configuration
+--- @field projects.gradle.root_markers string[] Files indicating a Gradle project root
+--- @field projects.gradle.type string Project language type (default: "java")
+--- @field projects.go table Go project configuration
+--- @field projects.go.root_markers string[] Files indicating a Go project root (default: {"go.mod"})
+--- @field projects.go.type string Project language type (default: "go")
 M.config = {
 	maven_command = "mvn",
 	floating_window = {
@@ -43,6 +53,27 @@ M.config = {
 	},
 	debug_port = 5005,
 	data_dir = get_store_dir(),
+	projects = {
+		maven = {
+			root_markers = { "pom.xml" },
+			type = "java",
+		},
+
+		gradle = {
+			root_markers = { "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts" },
+			type = "java",
+		},
+
+		go = {
+			root_markers = { "go.mod" },
+			type = "go",
+		},
+
+		lua = {
+			root_markers = { "plugin/init.lua", "init.lua", "main.lua" },
+			type = "lua",
+		},
+	},
 }
 
 --- Setup the maven-test plugin
@@ -61,6 +92,18 @@ function M.setup(opts)
 	end
 
 	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
+
+	local detector = require("maven-test.project.detector")
+	local projects = detector.detect_project_type(M.config.projects)
+
+	if #projects > 0 then
+		vim.print("jf-debug-> Detected projects:")
+		for _, project in ipairs(projects) do
+			vim.print("  - " .. project[1] .. " at " .. project[2])
+		end
+	else
+		vim.print("jf-debug-> No projects detected")
+	end
 
 	require("maven-test.user_commands")
 
