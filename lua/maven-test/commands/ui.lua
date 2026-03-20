@@ -125,7 +125,7 @@ function M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore, fctOnSe
 		bufWin:close()
 
 		ui.show_command_editor(cmd, fctAddToStore, function()
-			M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore, fctOnSelected)
+			M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore, fctOnSelected, argumentsStore)
 		end)
 	end, { buffer = bufWin.buf, nowait = true })
 
