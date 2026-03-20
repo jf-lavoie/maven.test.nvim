@@ -27,7 +27,7 @@ local function update_view(bufWin, getCommands)
 		local sanitize = value:gsub("\n", "\\n"):gsub("\r", "\\r"):gsub("\t", "\\t")
 
 		-- Append active custom arguments to preview
-		for _, arg in ipairs(customArguments.list()) do
+		for _, arg in ipairs(customArguments:list()) do
 			if arg.active then
 				sanitize = arg:append_to_command(sanitize)
 			end
