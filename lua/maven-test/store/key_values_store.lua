@@ -9,11 +9,18 @@ local M = {}
 local Persistence = require("maven-test.store.persistence").Persistence
 
 --- In-memory key-value store where values are arrays of strings
-M.KeyValueStore = {}
-M.KeyValueStore.__index = M.KeyValueStore
+M.KeyValuesStore = {}
+M.KeyValuesStore.__index = M.KeyValuesStore
 
-function M.KeyValueStore.new(fileName)
-	local self = setmetatable({}, M.KeyValueStore)
+--- Create a new KeyValuesStore instance
+--- Initializes an empty in-memory store where each key maps to an array of values
+--- Most recently used values are stored first in each array
+--- @param fileName string Name of the JSON file for persistence (e.g., "commands.json")
+--- @return KeyValuesStore New KeyValuesStore instance
+--- @usage
+---   local store = KeyValuesStore.new("commands.json")
+function M.KeyValuesStore.new(fileName)
+	local self = setmetatable({}, M.KeyValuesStore)
 
 	self.persistence = Persistence.new(fileName)
 	self.store = {}
@@ -25,21 +32,21 @@ end
 --- Uses lazy initialization pattern - runs only once per session
 --- Subsequent calls are no-ops (function replaces itself)
 --- @private
-function M.KeyValueStore:_initialize_store()
+function M.KeyValuesStore:_initialize_store()
 	self.store = self.persistence:load()
 	self._initialize_store = function(self) end
 end
 
 --- Save current store state to disk
 --- @private
-function M.KeyValueStore:save()
+function M.KeyValuesStore:save()
 	self:_initialize_store()
 	self.persistence:save(self.store)
 end
 
 --- Reload store from disk, discarding in-memory changes
 --- Useful for synchronizing with external modifications
-function M.KeyValueStore:load()
+function M.KeyValuesStore:load()
 	self:_initialize_store()
 	self.store = self.persistence:load()
 end
@@ -54,7 +61,7 @@ end
 --- @usage
 ---   store.add("run_method", "mvn test -Dtest=%s")
 ---   store.add("run_all", "mvn test")
-function M.KeyValueStore:add(key, value)
+function M.KeyValuesStore:add(key, value)
 	self:_initialize_store()
 	if not self.store[key] then
 		self.store[key] = { value }
@@ -80,7 +87,7 @@ end
 --- @param value string The command to remove
 --- @usage
 ---   store.remove("run_method", "mvn test -Dtest=%s")
-function M.KeyValueStore:remove(key, value)
+function M.KeyValuesStore:remove(key, value)
 	self:_initialize_store()
 	if not self.store[key] then
 		return
@@ -108,7 +115,7 @@ end
 ---   if cmd then
 ---     runner.run_command(cmd)
 ---   end
-function M.KeyValueStore:first(key)
+function M.KeyValuesStore:first(key)
 	self:_initialize_store()
 	if not self.store[key] or #self.store[key] == 0 then
 		return nil
@@ -121,7 +128,7 @@ end
 --- @param value string the command to move to the front of the list
 --- @usage
 ---   local cmd = store.move_first("run_method", "echo hello")
-function M.KeyValueStore:move_first(key, value)
+function M.KeyValuesStore:move_first(key, value)
 	self:_initialize_store()
 	if not self.store[key] then
 		return
@@ -146,7 +153,7 @@ end
 ---   for _, cmd in ipairs(commands) do
 ---     print(cmd)
 ---   end
-function M.KeyValueStore:get(key)
+function M.KeyValuesStore:get(key)
 	self:_initialize_store()
 	return self.store[key] or {}
 end
@@ -156,7 +163,7 @@ end
 --- Useful for resetting to a clean state
 --- @usage
 ---   store.empty_store()  -- Remove all stored commands
-function M.KeyValueStore:empty_store()
+function M.KeyValuesStore:empty_store()
 	self:_initialize_store()
 	self.store = {}
 	self:save()

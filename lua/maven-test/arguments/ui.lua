@@ -173,6 +173,14 @@ end
 function M.external_default_arguments_editor(onComplete)
 	local store = require("maven-test.arguments.store")
 
-	M.default_arguments_editor(store.list, store.add, store.update, store.remove, onComplete)
+	M.default_arguments_editor(function()
+		return store:list()
+	end, function(arg)
+		return store:add(arg.text, arg)
+	end, function(arg)
+		return store:update(arg.text, arg)
+	end, function(arg)
+		return store:remove(arg.text)
+	end, onComplete)
 end
 return M
