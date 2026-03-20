@@ -16,21 +16,24 @@
 --- @usage
 ---   local arguments_store = require("maven-test.arguments.store")
 ---   local Argument = require("maven-test.arguments.argument").Argument
----   
+---
 ---   -- Add a new argument
 ---   arguments_store:add("-X", Argument.new("-X", true))
----   
+---
 ---   -- Get an argument
 ---   local arg = arguments_store:get("-X")
----   
+---
 ---   -- List all arguments
 ---   local all_args = arguments_store:list()
 
+local Argument = require("maven-test.arguments.argument").Argument
 local KeyValueStore = require("maven-test.store.key_value_store").KeyValueStore
 
 --- Singleton instance of KeyValueStore for Maven custom arguments
 --- Persists to arguments.json in ~/.local/share/nvim/maven.nvim.test/<project-name>/
 --- @type KeyValueStore
-local store = KeyValueStore.new("arguments.json")
+local store = KeyValueStore.new("arguments.json", function(data)
+	return Argument.new(data.text, data.active)
+end)
 
 return store
