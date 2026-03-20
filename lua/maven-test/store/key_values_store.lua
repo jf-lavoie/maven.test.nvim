@@ -34,7 +34,7 @@ end
 --- @private
 function M.KeyValuesStore:_initialize_store()
 	self.store = self.persistence:load()
-	self._initialize_store = function(self) end
+	self._initialize_store = function() end
 end
 
 --- Save current store state to disk

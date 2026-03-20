@@ -29,11 +29,13 @@
 local Argument = require("maven-test.arguments.argument").Argument
 local KeyValueStore = require("maven-test.store.key_value_store").KeyValueStore
 
---- Singleton instance of KeyValueStore for Maven custom arguments
---- Persists to arguments.json in ~/.local/share/nvim/maven.nvim.test/<project-name>/
---- @type KeyValueStore
-local store = KeyValueStore.new("arguments.json", function(data)
-	return Argument.new(data.text, data.active)
-end)
+local M = {}
 
-return store
+function M.new(project_type)
+	local store = KeyValueStore.new(string.format("%s_arguments.json", project_type), function(data)
+		return Argument.new(data.text, data.active)
+	end)
+	return store
+end
+
+return M

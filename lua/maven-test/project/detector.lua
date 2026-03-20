@@ -31,11 +31,11 @@ end
 function M.detect_project_type(projectConfigs)
 	local projects = {}
 
-	for project_pattern, config in pairs(projectConfigs) do
+	for project_type, config in pairs(projectConfigs) do
 		if config.root_markers then
 			local root = find_project_root(config.root_markers)
 			if root then
-				table.insert(projects, { project_pattern, root })
+				table.insert(projects, { project_type, root })
 			end
 		end
 	end

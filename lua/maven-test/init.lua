@@ -56,25 +56,57 @@ M.config = {
 	projects = {
 		maven = {
 			root_markers = { "pom.xml" },
-			type = "java",
+			pattern = "java",
+			test_commands = { "mvn test" },
+			test_file_commands = { "mvn test -Dtest=%s" },
+			test_method_commands = { "mvn test -Dtest=%s#%s" },
+			commands = {
+				"mvn site",
+				"mvn clean",
+				"mvn deploy",
+				"mvn install",
+				"mvn verify",
+				"mvn package",
+				"mvn test",
+				"mvn compile",
+				"mvn validate",
+			},
 		},
 
 		gradle = {
 			root_markers = { "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts" },
-			type = "java",
+			pattern = "java",
+			test_commands = { "gradle test" },
+			test_file_commands = { "gradle test --tests %s" },
+			test_method_commands = { "gradle test --tests %s.%s" },
 		},
 
 		go = {
 			root_markers = { "go.mod" },
-			type = "go",
+			pattern = "go",
+			test_commands = { "go test ./..." },
+			test_file_commands = { "go test %s" },
+			test_method_commands = { "go test -run ^%s$ %s" },
 		},
 
 		lua = {
 			root_markers = { "plugin/init.lua", "init.lua", "main.lua" },
-			type = "lua",
+			pattern = "lua",
+			test_commands = { "lua test" },
+			test_file_commands = { "lua test %s" },
+			test_method_commands = { "lua test %s -m %s" },
 		},
 	},
 }
+
+M.ProjectConfig = {}
+M.ProjectConfig.__index = M.ProjectConfig
+
+function M.ProjectConfig:new(project_type, configuration)
+	local project = setmetatable(vim.tbl_extend("force", { type = project_type }, configuration), self)
+
+	return project
+end
 
 --- Setup the maven-test plugin
 --- Merges user configuration with defaults and registers commands
@@ -94,18 +126,23 @@ function M.setup(opts)
 	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
 
 	local detector = require("maven-test.project.detector")
-	local projects = detector.detect_project_type(M.config.projects)
+	local detected_projects = detector.detect_project_type(M.config.projects)
 
-	if #projects > 0 then
-		vim.print("jf-debug-> Detected projects:")
-		for _, project in ipairs(projects) do
-			vim.print("  - " .. project[1] .. " at " .. project[2])
+	local projectConfigs = {}
+
+	if #detected_projects > 0 then
+		for _, root in ipairs(detected_projects) do
+			local project_type = root[1]
+			local path = root[2]
+			vim.notify("maven-test: " .. project_type .. " at " .. path, vim.log.levels.INFO)
+
+			table.insert(projectConfigs, M.ProjectConfig:new(project_type, M.config.projects[project_type]))
 		end
 	else
-		vim.print("jf-debug-> No projects detected")
+		vim.notify("maven-test: No projects detected", vim.log.levels.INFO)
 	end
 
-	require("maven-test.user_commands")
+	require("maven-test.user_commands").register_commands(projectConfigs)
 
 	vim.g.loaded_maven_test = 1
 end

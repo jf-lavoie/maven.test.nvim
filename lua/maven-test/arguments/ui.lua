@@ -170,9 +170,7 @@ end
 ---   default_arguments_editor(
 ---     function() print("Closed") end
 ---   )
-function M.external_default_arguments_editor(onComplete)
-	local store = require("maven-test.arguments.store")
-
+function M.external_default_arguments_editor(store, onComplete)
 	M.default_arguments_editor(function()
 		return store:list()
 	end, function(arg)

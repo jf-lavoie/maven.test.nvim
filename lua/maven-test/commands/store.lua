@@ -6,7 +6,16 @@
 
 local KeyValuesStore = require("maven-test.store.key_values_store").KeyValuesStore
 
---- In-memory key-value store where values are arrays of strings
-local store = KeyValuesStore.new("store.json")
+local M = {}
 
-return store
+function M.new(project_type)
+	local store = KeyValuesStore.new(string.format("%s_commands.json", project_type))
+	return store
+end
+
+return M
+
+--- In-memory key-value store where values are arrays of strings
+-- local store = KeyValuesStore.new("store.json")
+--
+-- return store

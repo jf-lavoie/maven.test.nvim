@@ -30,10 +30,8 @@ end
 --- @usage
 ---   runner.run_command("mvn test")
 ---   runner.run_command("mvn test -Dtest=com.example.MyTest#testMethod")
-function M.run_command(command)
-	local customArguments = require("maven-test.arguments.store")
-
-	for _, arg in ipairs(customArguments:list()) do
+function M.run_command(command, argumentsStore)
+	for _, arg in ipairs(argumentsStore:list()) do
 		if arg.active then
 			command = arg:append_to_command(command)
 		end
@@ -56,7 +54,7 @@ end
 --- @param command string The Maven command template with %s placeholder
 --- @usage
 ---   runner.run_test_method("testMethod", "mvn test -Dtest=%s")
-function M.run_test_method(method_name, command)
+function M.run_test_method(method_name, command, argumentsStore)
 	local class_name = require("maven-test.tests.parser").get_test_class()
 	local package_name = get_package_name()
 
@@ -67,7 +65,7 @@ function M.run_test_method(method_name, command)
 
 	local fully_qualified = package_name .. "." .. class_name .. "#" .. method_name
 	local localCommand = string.format(command, fully_qualified)
-	M.run_command(localCommand)
+	M.run_command(localCommand, argumentsStore)
 end
 
 --- Run all tests in the current class
@@ -76,7 +74,7 @@ end
 --- @param command string The Maven command template with %s placeholder
 --- @usage
 ---   runner.run_test_class("mvn test -Dtest=%s")
-function M.run_test_class(command)
+function M.run_test_class(command, argumentsStore)
 	local class_name = require("maven-test.tests.parser").get_test_class()
 	local package_name = get_package_name()
 
@@ -87,7 +85,7 @@ function M.run_test_class(command)
 
 	local fully_qualified = package_name .. "." .. class_name.name
 	local localCommand = string.format(command, fully_qualified)
-	M.run_command(localCommand)
+	M.run_command(localCommand, argumentsStore)
 end
 
 --- Run all tests in the project
@@ -95,8 +93,8 @@ end
 --- @param command string The Maven command (e.g., "mvn test")
 --- @usage
 ---   runner.run_all_tests("mvn test")
-function M.run_all_tests(command)
-	M.run_command(command)
+function M.run_all_tests(command, argumentsStore)
+	M.run_command(command, argumentsStore)
 end
 
 return M

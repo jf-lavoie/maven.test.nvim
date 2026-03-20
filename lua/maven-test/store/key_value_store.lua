@@ -82,7 +82,8 @@ end
 --- Update an existing argument's properties (typically the active state)
 --- Finds the argument by text and updates its active flag
 --- Automatically persists to disk after update
---- @param arg Argument The argument object with updated properties
+--- @param key string The store key
+--- @param value Argument The argument object with updated properties
 --- @usage
 ---   local arg = Argument.new("-X", false)  -- Deactivate the -X flag
 ---   arguments.update(arg.text, arg)

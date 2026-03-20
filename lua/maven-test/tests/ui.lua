@@ -84,7 +84,8 @@ end
 --- Convert command to preview string with escaped special characters
 --- @return string The sanitized command for display
 function CommandDetail:toPreviewString()
-	return self.cmd:gsub("\n", "\\n"):gsub("\r", "\\r"):gsub("\t", "\\t")
+	local str, _ = self.cmd:gsub("\n", "\\n"):gsub("\r", "\\r"):gsub("\t", "\\t")
+	return str
 end
 
 --- Get the selected command from the UI
@@ -317,10 +318,11 @@ end
 --- @param getCommands function Function that returns command templates
 --- @param fctDeleteFromStore function Callback to delete from store
 --- @param fctAddToStore function Callback to add to store
+--- @param argumentsStore table Store of custom arguments
 --- @private
-show_command_editor = function(cmd, getCommands, fctDeleteFromStore, fctAddToStore)
+show_command_editor = function(cmd, getCommands, fctDeleteFromStore, fctAddToStore, argumentsStore)
 	ui.show_command_editor(cmd.format, fctAddToStore, function()
-		_show_test_selector(getCommands, fctDeleteFromStore, fctAddToStore)
+		_show_test_selector(getCommands, fctDeleteFromStore, fctAddToStore, argumentsStore)
 	end)
 end
 
@@ -330,7 +332,7 @@ end
 --- @param fctDeleteFromStore function Callback to delete from store
 --- @param fctAddToStore function Callback to add to store
 --- @private
-_show_test_selector = function(getCommands, fctDeleteFromStore, fctAddToStore)
+_show_test_selector = function(getCommands, fctDeleteFromStore, fctAddToStore, argumentsStore)
 	local parser = require("maven-test.tests.parser")
 	local runner = require("maven-test.runner.runner")
 
@@ -375,7 +377,7 @@ _show_test_selector = function(getCommands, fctDeleteFromStore, fctAddToStore)
 		actionsWin:close()
 		commandsWin:close()
 
-		runner.run_command(cmd.cmd)
+		runner.run_command(cmd.cmd, argumentsStore)
 	end
 
 	-- Actions window keymaps
@@ -443,7 +445,7 @@ _show_test_selector = function(getCommands, fctDeleteFromStore, fctAddToStore)
 		actionsWin:close()
 		commandsWin:close()
 
-		show_command_editor(cmd, getCommands, fctDeleteFromStore, fctAddToStore)
+		show_command_editor(cmd, getCommands, fctDeleteFromStore, fctAddToStore, argumentsStore)
 	end, { buffer = commandsWin.buf, nowait = true })
 
 	-- Delete command keymap
@@ -465,8 +467,8 @@ end
 ---     function(cmd) store.remove("run_method", cmd) end,
 ---     function(cmd) store.add("run_method", cmd) end
 ---   )
-function M.show_test_selector(getCommands, fctDeleteFromStore, fctAddToStore)
-	_show_test_selector(getCommands, fctDeleteFromStore, fctAddToStore)
+function M.show_test_selector(getCommands, fctDeleteFromStore, fctAddToStore, argumentsStore)
+	_show_test_selector(getCommands, fctDeleteFromStore, fctAddToStore, argumentsStore)
 end
 
 return M
