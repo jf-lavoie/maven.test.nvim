@@ -12,6 +12,13 @@ local Persistence = require("maven-test.store.persistence").Persistence
 M.KeyValueStore = {}
 M.KeyValueStore.__index = M.KeyValueStore
 
+--- Create a new KeyValueStore instance
+--- Initializes an empty in-memory store with file persistence
+--- @param fileName string Name of the JSON file for persistence (e.g., "store.json")
+--- @param onDataLoaded function|nil Optional callback to transform data when loading from disk
+--- @return KeyValueStore New KeyValueStore instance
+--- @usage
+---   local store = KeyValueStore.new("arguments.json", function(data) return Argument.from_json(data) end)
 function M.KeyValueStore.new(fileName, onDataLoaded)
 	local self = setmetatable({}, M.KeyValueStore)
 
@@ -47,6 +54,8 @@ end
 
 --- Reload store from disk, discarding in-memory changes
 --- Useful for synchronizing with external modifications
+--- @usage
+---   store:load()  -- Reload from disk
 function M.KeyValueStore:load()
 	self:_initialize_store()
 	self.store = self.persistence:load()
@@ -104,14 +113,14 @@ function M.KeyValueStore:remove(key)
 	self:save()
 end
 
---- Get a shallow copy of the store as a list
---- Returns a copy of the store array to prevent external modifications
---- If the store is not initialized or empty, returns an empty table
---- @return table A shallow copy of the store array
+--- Get a shallow copy of the store as a list of values
+--- Returns a copy of all values in the store to prevent external modifications
+--- If the store is not initialized or empty, returns an empty array
+--- @return table An array containing all values from the store
 --- @usage
 ---   local items = store:list()
----   for i, item in ipairs(items) do
----     print(item)
+---   for _, item in ipairs(items) do
+---     print(vim.inspect(item))
 ---   end
 function M.KeyValueStore:list()
 	self:_initialize_store()

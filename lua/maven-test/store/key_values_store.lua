@@ -12,6 +12,13 @@ local Persistence = require("maven-test.store.persistence").Persistence
 M.KeyValuesStore = {}
 M.KeyValuesStore.__index = M.KeyValuesStore
 
+--- Create a new KeyValuesStore instance
+--- Initializes an empty in-memory store where each key maps to an array of values
+--- Most recently used values are stored first in each array
+--- @param fileName string Name of the JSON file for persistence (e.g., "commands.json")
+--- @return KeyValuesStore New KeyValuesStore instance
+--- @usage
+---   local store = KeyValuesStore.new("commands.json")
 function M.KeyValuesStore.new(fileName)
 	local self = setmetatable({}, M.KeyValuesStore)
 
