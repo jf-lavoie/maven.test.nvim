@@ -171,31 +171,13 @@ local function onBufLeave(actionsWin, commandsWin)
 	return true
 end
 
---- Extract package name from current Java file
---- Searches first 50 lines for package declaration
---- @return string|nil The package name or nil if not found
---- @private
-local function get_package_name()
-	local bufnr = vim.api.nvim_get_current_buf()
-	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, 50, false)
-
-	for _, line in ipairs(lines) do
-		local package = line:match("^package%s+([%w%._]+)")
-		if package then
-			return package
-		end
-	end
-
-	return nil
-end
-
 --- Format a Maven command with the test identifier
 --- @param command string The command template with %s placeholder
 --- @param test string The test identifier to insert
 --- @return string The formatted Maven command
 --- @private
-local function get_maven_command(command, test)
-	return string.format(command, test)
+local function get_maven_command(command, templateValues)
+	return require("maven-test.template").template(command, templateValues)
 end
 
 --- Update the command preview pane
@@ -305,6 +287,13 @@ local function create_fully_qualidfied_commands(fullyQualifiedNames, commands)
 	for _, fqn in ipairs(localFullyQualifiedNames) do
 		local cmds = {}
 		for _, cmdFormat in ipairs(commands) do
+
+      local templateValues = {
+        class = fqn.
+        method = d
+      }
+
+
 			table.insert(cmds, CommandDetail.new(get_maven_command(cmdFormat, fqn.text), cmdFormat))
 		end
 
@@ -333,12 +322,12 @@ end
 --- @param fctAddToStore function Callback to add to store
 --- @private
 _show_test_selector = function(getCommands, fctDeleteFromStore, fctAddToStore, argumentsStore)
-	local parser = require("maven-test.tests.parser")
+	local parser = require("maven-test.tests.parsers.java")
 	local runner = require("maven-test.runner.runner")
 
 	local testMethods = parser.get_test_methods()
 	local class = parser.get_test_class()
-	local package_name = get_package_name()
+	local package_name = parser.get_package_name()
 
 	if #testMethods == 0 then
 		vim.notify("No test methods found in current file", vim.log.levels.WARN)

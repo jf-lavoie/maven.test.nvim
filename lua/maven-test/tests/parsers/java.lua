@@ -58,7 +58,7 @@ function M.get_test_methods()
 				table.insert(tests, {
 					name = method_name,
 					line = method_start_row + 1,
-					type = "method",
+					-- type = "method",
 					is_current = is_current,
 				})
 			end
@@ -97,7 +97,7 @@ function M.get_test_methods()
 				table.insert(tests, {
 					name = method_name,
 					line = method_start_row + 1,
-					type = "method",
+					-- type = "method",
 					is_current = is_current,
 				})
 			end
@@ -142,7 +142,7 @@ function M.get_test_methods()
 				table.insert(tests, {
 					name = field_name,
 					line = field_start_row + 1,
-					type = "method", -- Note: fields are also marked as "method" for consistency
+					-- type = "method", -- Note: fields are also marked as "method" for consistency
 					is_current = is_current,
 				})
 			end
@@ -150,6 +150,24 @@ function M.get_test_methods()
 	end
 
 	return tests
+end
+
+--- Extract the package name from the current Java file
+--- Searches the first 50 lines for a package declaration
+--- @return string|nil The package name (e.g., "com.example.app"), or nil if not found
+--- @private
+function M.get_package_name()
+	local bufnr = vim.api.nvim_get_current_buf()
+	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, 50, false)
+
+	for _, line in ipairs(lines) do
+		local package = line:match("^package%s+([%w%.]+)")
+		if package then
+			return package
+		end
+	end
+
+	return nil
 end
 
 --- Get the test class name from the current buffer
@@ -186,7 +204,7 @@ function M.get_test_class()
 			return {
 				name = class_name,
 				line = start_row + 1,
-				type = "class",
+				-- type = "class",
 			}
 		end
 	end

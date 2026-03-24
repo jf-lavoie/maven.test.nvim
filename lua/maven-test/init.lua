@@ -58,8 +58,8 @@ M.config = {
 			root_markers = { "pom.xml" },
 			pattern = "java",
 			test_commands = { "mvn test" },
-			test_file_commands = { "mvn test -Dtest=%s" },
-			test_method_commands = { "mvn test -Dtest=%s#%s" },
+			test_file_commands = { "mvn test -Dtest={package}.{class}" },
+			test_method_commands = { "mvn test -Dtest={package}.{class}#{method}" },
 			commands = {
 				"mvn site",
 				"mvn clean",
@@ -77,8 +77,8 @@ M.config = {
 			root_markers = { "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts" },
 			pattern = "java",
 			test_commands = { "gradle test" },
-			test_file_commands = { "gradle test --tests %s" },
-			test_method_commands = { "gradle test --tests %s.%s" },
+			test_file_commands = { "gradle test --tests {package}.{class}" },
+			test_method_commands = { "gradle test --tests {package}.{class}#{method}" },
 		},
 
 		go = {
