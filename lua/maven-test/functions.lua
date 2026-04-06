@@ -93,6 +93,8 @@ function ProjectFunctions:run_test()
 	self:_initialize()
 	require("maven-test.tests.ui").show_test_selector(function()
 		return self.store_cmds:get(RUN_METHOD_KEY)
+	end, function()
+		return self.store_cmds:get(RUN_CLASS_KEY)
 	end, function(value)
 		self.store_cmds:remove(RUN_METHOD_KEY, value)
 	end, function(value)
@@ -105,7 +107,8 @@ end
 function ProjectFunctions:run_test_class()
 	self:_initialize()
 	local cmd = self.store_cmds:first(RUN_CLASS_KEY)
-	require("maven-test.runner.runner").run_test_class(cmd)
+
+	require("maven-test.runner.runner").run_test_class(self.projectConfig.type, cmd, self.store_arguments)
 end
 
 --- Run all tests in the project
@@ -113,7 +116,7 @@ end
 function ProjectFunctions:run_all_tests()
 	self:_initialize()
 	local cmd = self.store_cmds:first(RUN_ALL_KEY)
-	require("maven-test.runner.runner").run_all_tests(cmd)
+	require("maven-test.runner.runner").run_all_tests(cmd, self.store_arguments)
 end
 
 --- Restore command store to default state

@@ -17,6 +17,7 @@ local M = {}
 M.register_commands = function(projectConfigs)
 	for _, projectConfig in ipairs(projectConfigs) do
 		local pattern = projectConfig.pattern
+		vim.print("jf-debug-> 'pattern': " .. tostring(pattern))
 		-- Register FileType autocmd to create buffer-local commands for Java files
 		vim.api.nvim_create_autocmd("FileType", {
 			pattern = pattern,

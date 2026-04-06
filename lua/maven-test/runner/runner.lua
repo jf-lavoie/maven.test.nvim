@@ -5,22 +5,13 @@
 
 local M = {}
 
---- Extract the package name from the current Java file
---- Searches the first 50 lines for a package declaration
---- @return string|nil The package name (e.g., "com.example.app"), or nil if not found
+--- Template a string by replacing {placeholder} patterns with values
+--- @param str string The template string (e.g., "mvn test -Dtest={class}#{method}")
+--- @param vars table A table of placeholder values (e.g., {class="MyTest", method="testFoo"})
+--- @return string The templated string with placeholders replaced
 --- @private
-local function get_package_name()
-	local bufnr = vim.api.nvim_get_current_buf()
-	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, 50, false)
-
-	for _, line in ipairs(lines) do
-		local package = line:match("^package%s+([%w%.]+)")
-		if package then
-			return package
-		end
-	end
-
-	return nil
+local function template(str, vars)
+	return require("maven-test.template").template(str, vars)
 end
 
 --- Run a Maven command in a terminal split
@@ -49,42 +40,59 @@ end
 
 --- Run a specific test method
 --- Constructs fully qualified test name: package.ClassName#methodName
---- Formats the command template with the fully qualified name
---- @param method_name string The test method name (e.g., "testSomething")
---- @param command string The Maven command template with %s placeholder
+--- Formats the command template with placeholders: {file}, {class}, {testmethod}
+--- @param command string The Maven command template with placeholders
 --- @usage
----   runner.run_test_method("testMethod", "mvn test -Dtest=%s")
-function M.run_test_method(method_name, command, argumentsStore)
-	local class_name = require("maven-test.tests.parser").get_test_class()
-	local package_name = get_package_name()
+---   runner.run_test_method("testMethod", "mvn test -Dtest={class}#{testmethod}")
+function M.run_test_method(command, argumentsStore)
+	local class_name = require("maven-test.tests.parsers").get_test_class()
+	local package_name = require("maven-test.tests.parsers").get_package_name()
+	local methods = require("maven-test.tests.parsers").get_test_methods()
+	local current_function = nil
+	for _, value in ipairs(methods) do
+		if value.is_current then
+			current_function = value.name
+			break
+		end
+	end
 
-	if not class_name or not package_name then
-		vim.notify("Could not determine test class or package", vim.log.levels.ERROR)
+	if not class_name or not package_name or not current_function then
+		vim.notify("Could not determine test package, class or method", vim.log.levels.ERROR)
 		return
 	end
 
-	local fully_qualified = package_name .. "." .. class_name .. "#" .. method_name
-	local localCommand = string.format(command, fully_qualified)
+	local templateValues = {
+		namespace = package_name,
+		class = class_name,
+		fully_qualified_class = package_name .. "." .. class_name,
+		func = current_function,
+	}
+
+	local localCommand = template(command, templateValues)
 	M.run_command(localCommand, argumentsStore)
 end
 
 --- Run all tests in the current class
 --- Constructs fully qualified class name: package.ClassName
---- Formats the command template with the fully qualified name
---- @param command string The Maven command template with %s placeholder
+--- Formats the command template with placeholders: {file}, {class}
+--- @param command string The Maven command template with placeholders
 --- @usage
----   runner.run_test_class("mvn test -Dtest=%s")
-function M.run_test_class(command, argumentsStore)
-	local class_name = require("maven-test.tests.parser").get_test_class()
-	local package_name = get_package_name()
+---   runner.run_test_class("mvn test -Dtest={class}")
+function M.run_test_class(type, command, argumentsStore)
+	local class_name = require("maven-test.tests.parsers").get_test_class(type)
+	local package_name = require("maven-test.tests.parsers").get_package_name(type)
 
 	if not class_name or not package_name then
 		vim.notify("Could not determine test class or package", vim.log.levels.ERROR)
 		return
 	end
 
-	local fully_qualified = package_name .. "." .. class_name.name
-	local localCommand = string.format(command, fully_qualified)
+	local templateValues = {
+		package = package_name,
+		class = class_name,
+	}
+
+	local localCommand = template(command, templateValues)
 	M.run_command(localCommand, argumentsStore)
 end
 
