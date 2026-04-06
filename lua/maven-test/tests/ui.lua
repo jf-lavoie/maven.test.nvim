@@ -382,6 +382,7 @@ end
 
 --- Shows command editor and returns to test selector on completion
 --- Opens a floating window to edit the command text, then reopens the test selector
+--- @param pattern string The pattern to match test methods and classes
 --- @param formattedCommand FormattedCommand The command to edit
 --- @param getTestMethodCommands function Function that returns command templates for test methods
 --- @param getTestClassCommands function Function that returns command templates for test classes
@@ -392,6 +393,7 @@ end
 --- @param argumentsStore KeyValueStore Store of custom Maven arguments
 --- @private
 show_command_editor = function(
+	pattern,
 	formattedCommand,
 	getTestMethodCommands,
 	getTestClassCommands,
@@ -401,9 +403,9 @@ show_command_editor = function(
 	fctAddToClassStore,
 	argumentsStore
 )
-	vim.print("jf-debug-> 'formattedCommand': " .. vim.inspect(formattedCommand))
 	ui.show_command_editor(formattedCommand.format, formattedCommand.fctAddToStore, function()
 		_show_test_selector(
+			pattern,
 			getTestMethodCommands,
 			getTestClassCommands,
 			fctDeleteFromMethodStore,
@@ -419,6 +421,7 @@ end
 --- Parses the current Java file for tests and creates a two-pane layout
 --- Top pane shows test methods and class-level actions
 --- Bottom pane shows preview of Maven commands with custom arguments
+--- @param pattern string The pattern to match test methods and classes
 --- @param getTestMethodCommands function Function that returns command templates for test methods
 --- @param getTestClassCommands function Function that returns command templates for test classes
 --- @param fctDeleteFromMethodStore function Callback to delete method commands from the store
@@ -428,6 +431,7 @@ end
 --- @param argumentsStore KeyValueStore The store containing custom Maven arguments
 --- @private
 _show_test_selector = function(
+	pattern,
 	getTestMethodCommands,
 	getTestClassCommands,
 	fctDeleteFromMethodStore,
@@ -436,12 +440,12 @@ _show_test_selector = function(
 	fctAddToClassStore,
 	argumentsStore
 )
-	local parser = require("maven-test.tests.parsers.java")
+	local parser = require("maven-test.tests.parsers")
 	local runner = require("maven-test.runner.runner")
 
-	local testMethods = parser.get_test_methods()
-	local class = parser.get_test_class()
-	local package_name = parser.get_package_name()
+	local testMethods = parser.get_test_methods(pattern)
+	local class = parser.get_test_class(pattern)
+	local package_name = parser.get_package_name(pattern)
 
 	if #testMethods == 0 then
 		vim.notify("No test methods found in current file", vim.log.levels.WARN)
@@ -589,6 +593,7 @@ end
 --- Displays a two-pane floating window for selecting and running tests
 --- Top pane: List of test methods and class-level test actions
 --- Bottom pane: Preview of Maven commands to be executed
+--- @param pattern string The pattern to match test methods and classes
 --- @param getTestMethodCommands function Function that returns command templates for test methods
 --- @param getTestClassCommands function Function that returns command templates for test classes
 --- @param fctDeleteFromMethodStore function Callback to delete method commands from the store
@@ -607,6 +612,7 @@ end
 ---     argumentsStore
 ---   )
 function M.show_test_selector(
+	pattern,
 	getTestMethodCommands,
 	getTestClassCommands,
 	fctDeleteFromMethodStore,
@@ -616,6 +622,7 @@ function M.show_test_selector(
 	argumentsStore
 )
 	_show_test_selector(
+		pattern,
 		getTestMethodCommands,
 		getTestClassCommands,
 		fctDeleteFromMethodStore,

@@ -102,8 +102,11 @@ M.config = {
 			root_markers = { "go.mod" },
 			pattern = "go",
 			test_commands = { "go test ./..." },
-			test_file_commands = { "go test %s" },
-			test_method_commands = { "go test -run ^%s$ %s" },
+			test_file_commands = { "go test -run . {file}" },
+			test_method_commands = { "go test ./... -run ^{method}$" },
+			commands = {
+				"go build ./...",
+			},
 		},
 
 		lua = {

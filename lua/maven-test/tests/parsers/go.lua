@@ -5,6 +5,20 @@
 
 local M = {}
 
+--- Get the "test class" for Go files
+--- Go doesn't have classes, so this returns an empty placeholder object
+--- This provides interface compatibility with Java parser for the test runner
+--- @return table A class object with: { name: string (empty), line: number (-1) }
+--- @usage
+---   local class = parser.get_test_class()
+---   -- Returns { name = "", line = -1 } for Go files
+function M.get_test_class()
+	return {
+		name = "",
+		line = -1,
+	}
+end
+
 --- Get all test functions in the current buffer
 --- Searches for functions with names starting with Test, Benchmark, Example, or Fuzz
 --- @return table[] Array of test objects, each with: { name: string, line: number, type: "function", is_current: boolean }
@@ -96,13 +110,13 @@ function M.get_package_name()
 	return nil
 end
 
---- Get the file name without extension
---- This is used as a substitute for "class" in Go since Go doesn't have classes
---- @return string|nil The file name without extension, or nil if not available
---- @usage
----   local file = parser.get_file_name()
-function M.get_file_name()
-	return vim.fn.expand("%:t:r")
-end
+--- --- Get the file name without extension
+--- --- This is used as a substitute for "class" in Go since Go doesn't have classes
+--- --- @return string|nil The file name without extension, or nil if not available
+--- --- @usage
+--- ---   local file = parser.get_file_name()
+--- function M.get_file_name()
+--- 	return vim.fn.expand("%:t:r")
+--- end
 
 return M

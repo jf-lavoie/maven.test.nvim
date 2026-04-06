@@ -67,7 +67,11 @@ function ProjectFunctions:_default_commands()
 			self.store_cmds:add(RUN_METHOD_KEY, cmd)
 		end
 	end
-	if #self.store_cmds:get(COMMANDS) == 0 then
+	if
+		self.projectConfig.commands ~= nil
+		and #self.projectConfig.commands > 0
+		and #self.store_cmds:get(COMMANDS) == 0
+	then
 		for _, cmd in ipairs(self.projectConfig.commands) do
 			self.store_cmds:add(COMMANDS, cmd)
 		end
@@ -111,7 +115,7 @@ end
 --- User can select method, edit/delete commands, and execute tests
 function ProjectFunctions:run_test()
 	self:_initialize()
-	require("maven-test.tests.ui").show_test_selector(function()
+	require("maven-test.tests.ui").show_test_selector(self.projectConfig.pattern, function()
 		return self.store_cmds:get(RUN_METHOD_KEY)
 	end, function()
 		return self.store_cmds:get(RUN_CLASS_KEY)
