@@ -9,6 +9,9 @@ local M = {}
 local Persistence = require("maven-test.store.persistence").Persistence
 
 --- In-memory key-value store where values are arrays of strings
+--- @class KeyValuesStore
+--- @field persistence Persistence The persistence layer for disk storage
+--- @field store table<string, string[]> The in-memory store mapping keys to string arrays
 M.KeyValuesStore = {}
 M.KeyValuesStore.__index = M.KeyValuesStore
 
@@ -34,7 +37,7 @@ end
 --- @private
 function M.KeyValuesStore:_initialize_store()
 	self.store = self.persistence:load()
-	self._initialize_store = function(self) end
+	self._initialize_store = function() end
 end
 
 --- Save current store state to disk

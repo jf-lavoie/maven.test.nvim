@@ -17,17 +17,15 @@ local col = ui.col
 --- @param bufWin FloatingWindow The window to update
 --- @param getCommands function Function that returns array of commands
 --- @private
-local function update_view(bufWin, getCommands)
+local function update_view(bufWin, getCommands, argumentsStore)
 	local cmds = {}
-
-	local customArguments = require("maven-test.arguments.store")
 
 	for index, value in ipairs(getCommands()) do
 		-- Sanitize command for display (escape special characters)
 		local sanitize = value:gsub("\n", "\\n"):gsub("\r", "\\r"):gsub("\t", "\\t")
 
 		-- Append active custom arguments to preview
-		for _, arg in ipairs(customArguments:list()) do
+		for _, arg in ipairs(argumentsStore:list()) do
 			if arg.active then
 				sanitize = arg:append_to_command(sanitize)
 			end
@@ -69,7 +67,7 @@ end
 ---     function(cmd) store.add("commands", cmd) end,
 ---     function(cmd) runner.run(cmd) end
 ---   )
-function M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore, fctOnSelected)
+function M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore, fctOnSelected, argumentsStore)
 	local bufWin = ui.FloatingWindow.new(height, width, row, col, true, "sh")
 
 	-- Auto-close when switching windows
@@ -110,14 +108,14 @@ function M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore, fctOnSe
 		local cmd = getSelectedCmd(bufWin, getCommands)
 		fctDeleteFromStore(cmd)
 
-		update_view(bufWin, getCommands)
+		update_view(bufWin, getCommands, argumentsStore)
 	end, { buffer = bufWin.buf, nowait = true })
 
 	vim.keymap.set("n", "a", function()
 		bufWin:close()
 
-		require("maven-test.arguments.ui").external_default_arguments_editor(function()
-			M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore, fctOnSelected)
+		require("maven-test.arguments.ui").external_default_arguments_editor(argumentsStore, function()
+			M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore, fctOnSelected, argumentsStore)
 		end)
 	end, { buffer = bufWin.buf, nowait = true })
 
@@ -127,11 +125,11 @@ function M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore, fctOnSe
 		bufWin:close()
 
 		ui.show_command_editor(cmd, fctAddToStore, function()
-			M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore, fctOnSelected)
+			M.show_commands(getCommands, fctDeleteFromStore, fctAddToStore, fctOnSelected, argumentsStore)
 		end)
 	end, { buffer = bufWin.buf, nowait = true })
 
-	update_view(bufWin, getCommands)
+	update_view(bufWin, getCommands, argumentsStore)
 
 	vim.api.nvim_win_set_option(
 		bufWin.win,
