@@ -132,10 +132,11 @@ function FormattedCommand:toPreviewString()
 end
 
 --- Gets the selected command from the UI based on cursor position
+--- Returns both the FullyQualifiedCommand and the specific FormattedCommand selected
 --- @param fqnCommands FullyQualifiedCommand[] Array of fully qualified commands
 --- @param actionsWin FloatingWindow The actions window
 --- @param commandsWin FloatingWindow The commands window
---- @return FormattedCommand|nil The selected command or nil
+--- @return FullyQualifiedCommand|nil, FormattedCommand|nil The selected commands or nil
 --- @private
 local function get_command(fqnCommands, actionsWin, commandsWin)
 	local line = vim.api.nvim_win_get_cursor(actionsWin.win)[1]
@@ -157,7 +158,7 @@ end
 --- @param commandsWin FloatingWindow The commands window
 --- @param fctDeleteFromStore function Callback to delete from store
 --- @private
-local function delete_command_from_store(fqnCommands, actionsWin, commandsWin, fctDeleteFromStore)
+local function delete_command_from_store(fqnCommands, actionsWin, commandsWin)
 	local fullyQualifiedCommand, formattedCommand = get_command(fqnCommands, actionsWin, commandsWin)
 
 	if fullyQualifiedCommand == nil then
@@ -177,7 +178,7 @@ local function delete_command_from_store(fqnCommands, actionsWin, commandsWin, f
 		return
 	end
 
-	fctDeleteFromStore(formattedCommand.format)
+	formattedCommand.fctDeleteFromStore(formattedCommand.format)
 end
 
 --- Create the top floating window for test actions
@@ -214,9 +215,9 @@ local function onBufLeave(actionsWin, commandsWin)
 	return true
 end
 
---- Format a Maven command with the test identifier
---- @param command string The command template with %s placeholder
---- @param test string The test identifier to insert
+--- Formats a Maven command with template values
+--- @param command string The command template with placeholders
+--- @param templateValues table The values to substitute into the template (package, class, method)
 --- @return string The formatted Maven command
 --- @private
 local function get_maven_command(command, templateValues)
@@ -381,12 +382,13 @@ end
 
 --- Shows command editor and returns to test selector on completion
 --- Opens a floating window to edit the command text, then reopens the test selector
---- @param fullyQualifiedCommand FullyQualifiedCommand The fully qualified command object
 --- @param formattedCommand FormattedCommand The command to edit
 --- @param getTestMethodCommands function Function that returns command templates for test methods
 --- @param getTestClassCommands function Function that returns command templates for test classes
---- @param fctDeleteFromMethodStore function Callback function(cmd) to delete from store
---- @param fctAddToStore function Callback function(cmd) to add to store
+--- @param fctDeleteFromMethodStore function Callback to delete method commands from store
+--- @param fctAddToMethodStore function Callback to add method commands to store
+--- @param fctDeleteFromClassStore function Callback to delete class commands from store
+--- @param fctAddToClassStore function Callback to add class commands to store
 --- @param argumentsStore KeyValueStore Store of custom Maven arguments
 --- @private
 show_command_editor = function(
@@ -419,8 +421,10 @@ end
 --- Bottom pane shows preview of Maven commands with custom arguments
 --- @param getTestMethodCommands function Function that returns command templates for test methods
 --- @param getTestClassCommands function Function that returns command templates for test classes
---- @param fctDeleteFromMethodStore function Callback function(cmd) to delete a command from the store
---- @param fctAddToMethodStore function Callback function(cmd) to add a command to the store
+--- @param fctDeleteFromMethodStore function Callback to delete method commands from the store
+--- @param fctAddToMethodStore function Callback to add method commands to the store
+--- @param fctDeleteFromClassStore function Callback to delete class commands from the store
+--- @param fctAddToClassStore function Callback to add class commands to the store
 --- @param argumentsStore KeyValueStore The store containing custom Maven arguments
 --- @private
 _show_test_selector = function(
@@ -567,7 +571,7 @@ _show_test_selector = function(
 
 	-- Delete command keymap
 	vim.keymap.set("n", "d", function()
-		delete_command_from_store(fqnCommands, actionsWin, commandsWin, fctDeleteFromMethodStore)
+		delete_command_from_store(fqnCommands, actionsWin, commandsWin)
 		fqnCommands = create_fully_qualidfied_commands(
 			fullyQualifiedNames,
 			testMethodCommands,
@@ -587,8 +591,10 @@ end
 --- Bottom pane: Preview of Maven commands to be executed
 --- @param getTestMethodCommands function Function that returns command templates for test methods
 --- @param getTestClassCommands function Function that returns command templates for test classes
---- @param fctDeleteFromMethodStore function Callback function(cmd) to delete a command from the store
---- @param fctAddToMethodStore function Callback function(cmd) to add a command to the store
+--- @param fctDeleteFromMethodStore function Callback to delete method commands from the store
+--- @param fctAddToMethodStore function Callback to add method commands to the store
+--- @param fctDeleteFromClassStore function Callback to delete class commands from the store
+--- @param fctAddToClassStore function Callback to add class commands to the store
 --- @param argumentsStore KeyValueStore The store containing custom Maven arguments
 --- @usage
 ---   show_test_selector(
@@ -596,6 +602,8 @@ end
 ---     function() return store.get("run_class") end,
 ---     function(cmd) store.remove("run_method", cmd) end,
 ---     function(cmd) store.add("run_method", cmd) end,
+---     function(cmd) store.remove("run_class", cmd) end,
+---     function(cmd) store.add("run_class", cmd) end,
 ---     argumentsStore
 ---   )
 function M.show_test_selector(
