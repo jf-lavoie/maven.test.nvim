@@ -99,6 +99,10 @@ function ProjectFunctions:run_test()
 		self.store_cmds:remove(RUN_METHOD_KEY, value)
 	end, function(value)
 		self.store_cmds:add(RUN_METHOD_KEY, value)
+	end, function(value)
+		self.store_cmds:remove(RUN_CLASS_KEY, value)
+	end, function(value)
+		self.store_cmds:add(RUN_CLASS_KEY, value)
 	end, self.store_arguments)
 end
 

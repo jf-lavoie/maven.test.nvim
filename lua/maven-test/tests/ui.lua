@@ -72,98 +72,112 @@ function FullyQualifiedName:toString()
 	return self:text() .. " (line " .. self.line .. ")"
 end
 
---- Command information class
---- Links a fully qualified name with its associated commands
---- @class CommandInfo
+--- Fully qualified command class
+--- Links a test identifier (FullyQualifiedName) with its associated formatted Maven commands
+--- @class FullyQualifiedCommand
 --- @field fqn FullyQualifiedName The test identifier
---- @field commands CommandDetail[] Array of command details for this test
-local CommandInfo = {}
-CommandInfo.__index = CommandInfo
+--- @field formattedCommands FormattedCommand[] Array of formatted Maven commands for this test
+local FullyQualifiedCommand = {}
+FullyQualifiedCommand.__index = FullyQualifiedCommand
 
---- Create a new CommandInfo
+--- Creates a new FullyQualifiedCommand
 --- @param fullyQualifiedName FullyQualifiedName The test identifier
---- @param commandDetails CommandDetail[] Array of command details
---- @return CommandInfo
-function CommandInfo.new(fullyQualifiedName, commandDetails)
-	local self = setmetatable({}, CommandInfo)
+--- @param formattedCommands FormattedCommand[] Array of formatted commands
+--- @return FullyQualifiedCommand
+function FullyQualifiedCommand.new(fullyQualifiedName, formattedCommands)
+	local self = setmetatable({}, FullyQualifiedCommand)
 	self.fqn = fullyQualifiedName
-	self.commands = commandDetails
+	self.formattedCommands = formattedCommands
 	return self
 end
 
---- Command detail class
---- Represents a formatted Maven command and its template
---- @class CommandDetail
---- @field cmd string The formatted Maven command
---- @field format string The command template with %s placeholder
-local CommandDetail = {}
-CommandDetail.__index = CommandDetail
+--- Checks if this command is for a class-level test
+--- Delegates to the underlying FullyQualifiedName's isClass method
+--- @return boolean True if this is a class-level test, false if it's a method-level test
+function FullyQualifiedCommand:isClass()
+	return self.fqn:isClass()
+end
 
---- Create a new CommandDetail
---- @param cmd string The formatted command
+--- Formatted command class
+--- Represents a Maven command that has been formatted with test-specific values
+--- @class FormattedCommand
+--- @field cmd string The fully formatted Maven command ready to execute
+--- @field format string The original command template before substitution
+--- @field fctAddToStore function Callback function(cmd) to add this command to the store when modified
+--- @field fctDeleteFromStore function Callback function(cmd) to add this command to the store when modified
+local FormattedCommand = {}
+FormattedCommand.__index = FormattedCommand
+
+--- Creates a new FormattedCommand
+--- @param cmd string The formatted Maven command
 --- @param format string The command template
---- @return CommandDetail
-function CommandDetail.new(cmd, format)
-	local self = setmetatable({}, CommandDetail)
+--- @param fctAddToStore function Callback function(cmd) to add this command to the store when modified
+--- @param fctDeleteFromStore function Callback function(cmd) to delete this command from the store when modified
+--- @return FormattedCommand
+function FormattedCommand.new(cmd, format, fctAddToStore, fctDeleteFromStore)
+	local self = setmetatable({}, FormattedCommand)
 	self.cmd = cmd
 	self.format = format
+	self.fctAddToStore = fctAddToStore
+	self.fctDeleteFromStore = fctDeleteFromStore
 	return self
 end
 
---- Convert command to preview string with escaped special characters
+--- Converts command to preview string with escaped special characters
+--- Escapes newlines, carriage returns, and tabs for display in UI
 --- @return string The sanitized command for display
-function CommandDetail:toPreviewString()
+function FormattedCommand:toPreviewString()
 	local str, _ = self.cmd:gsub("\n", "\\n"):gsub("\r", "\\r"):gsub("\t", "\\t")
 	return str
 end
 
---- Get the selected command from the UI
---- @param fqnCommands CommandInfo[] Array of command info objects
+--- Gets the selected command from the UI based on cursor position
+--- @param fqnCommands FullyQualifiedCommand[] Array of fully qualified commands
 --- @param actionsWin FloatingWindow The actions window
 --- @param commandsWin FloatingWindow The commands window
---- @return CommandDetail|nil The selected command or nil
+--- @return FormattedCommand|nil The selected command or nil
 --- @private
 local function get_command(fqnCommands, actionsWin, commandsWin)
 	local line = vim.api.nvim_win_get_cursor(actionsWin.win)[1]
-	local fqn = fqnCommands[line]
+	local fullyQualifiedCommand = fqnCommands[line]
 
-	local commands = fqn.commands
+	local formattedCommands = fullyQualifiedCommand.formattedCommands
 
 	local commandIndex = vim.api.nvim_win_get_cursor(commandsWin.win)[1]
 
-	local cmd = commands[commandIndex]
+	local formattedCommand = formattedCommands[commandIndex]
 
-	return cmd
+	return fullyQualifiedCommand, formattedCommand
 end
 
---- Delete a command from the store
+--- Deletes a command from the store
 --- Prevents deletion if only one command remains
---- @param fqnCommands CommandInfo[] Array of command info objects
+--- @param fqnCommands FullyQualifiedCommand[] Array of fully qualified commands
 --- @param actionsWin FloatingWindow The actions window
 --- @param commandsWin FloatingWindow The commands window
 --- @param fctDeleteFromStore function Callback to delete from store
 --- @private
 local function delete_command_from_store(fqnCommands, actionsWin, commandsWin, fctDeleteFromStore)
-	local line = vim.api.nvim_win_get_cursor(actionsWin.win)[1]
-	local fqn = fqnCommands[line]
+	local fullyQualifiedCommand, formattedCommand = get_command(fqnCommands, actionsWin, commandsWin)
 
-	local commands = fqn.commands
+	if fullyQualifiedCommand == nil then
+		vim.notify("No command selected to delete", vim.log.levels.ERROR)
+		return
+	end
+
+	local commands = fullyQualifiedCommand.formattedCommands
 
 	if #commands == 1 then
 		vim.notify("Only 1 command left. Will not delete.", vim.log.levels.WARN)
 		return
 	end
 
-	local commandIndex = vim.api.nvim_win_get_cursor(commandsWin.win)[1]
-
-	local cmd = commands[commandIndex]
-
-	if not cmd then
+	if not formattedCommand then
 		vim.notify("No command selected to delete", vim.log.levels.ERROR)
 		return
 	end
 
-	fctDeleteFromStore(cmd.format)
+	fctDeleteFromStore(formattedCommand.format)
 end
 
 --- Create the top floating window for test actions
@@ -214,7 +228,7 @@ end
 --- Retrieves commands for the selected line and renders them with active arguments
 --- @param actionsWin FloatingWindow The actions window (top pane)
 --- @param commandsWin FloatingWindow The commands preview window (bottom pane)
---- @param fqnCommands CommandInfo[] Array of command info objects linking tests to commands
+--- @param fqnCommands FullyQualifiedCommand[] Array of fully qualified commands linking tests to commands
 --- @param argumentsStore KeyValueStore The store containing custom Maven arguments
 --- @private
 local function update_preview(actionsWin, commandsWin, fqnCommands, argumentsStore)
@@ -225,7 +239,7 @@ local function update_preview(actionsWin, commandsWin, fqnCommands, argumentsSto
 	if line <= #fqnCommands then
 		local fqn = fqnCommands[line]
 
-		for index, value in ipairs(fqn.commands) do
+		for index, value in ipairs(fqn.formattedCommands) do
 			local t = value:toPreviewString()
 
 			-- Append active custom arguments to preview
@@ -251,9 +265,9 @@ local function update_preview(actionsWin, commandsWin, fqnCommands, argumentsSto
 	)
 end
 
---- Display fully qualified names in the actions window
+--- Displays fully qualified names in the actions window
 --- @param theWin FloatingWindow The window to update
---- @param fqnCommandsInfo CommandInfo[] Array of command info objects
+--- @param fqnCommandsInfo FullyQualifiedCommand[] Array of fully qualified commands
 --- @private
 local function show_fully_qualified_names(theWin, fqnCommandsInfo)
 	local lines = {}
@@ -297,9 +311,21 @@ end
 --- @param fullyQualifiedNames FullyQualifiedName[] Array of test identifiers
 --- @param testMethodCommands string[] Array of command templates for test methods
 --- @param testClassCommands string[] Array of command templates for test classes
---- @return CommandInfo[] Array of command info objects linking each test to its commands
+--- @param fctAddToMethodStore function Callback to add method commands to store
+--- @param fctAddToClassStore function Callback to add class commands to store
+--- @param fctDeleteFromMethodStore function Callback to delete method commands from store
+--- @param fctDeleteFromClassStore function Callback to delete class commands from store
+--- @return FullyQualifiedCommand[] Array of fully qualified commands linking each test to its commands
 --- @private
-local function create_fully_qualidfied_commands(fullyQualifiedNames, testMethodCommands, testClassCommands)
+local function create_fully_qualidfied_commands(
+	fullyQualifiedNames,
+	testMethodCommands,
+	testClassCommands,
+	fctAddToMethodStore,
+	fctAddToClassStore,
+	fctDeleteFromMethodStore,
+	fctDeleteFromClassStore
+)
 	local fqnCommands = {}
 
 	local localFullyQualifiedNames = fullyQualifiedNames
@@ -314,8 +340,7 @@ local function create_fully_qualidfied_commands(fullyQualifiedNames, testMethodC
 	end
 
 	for _, fqn in ipairs(localFullyQualifiedNames) do
-		vim.print("jf-debug-> 'fqn': " .. vim.inspect(fqn))
-		local cmds = {}
+		local formattedCmds = {}
 
 		if fqn:isClass() then
 			for _, cmdFormat in ipairs(testClassCommands) do
@@ -327,7 +352,10 @@ local function create_fully_qualidfied_commands(fullyQualifiedNames, testMethodC
 
 				local mavenCommand = get_maven_command(cmdFormat, templateValues)
 
-				table.insert(cmds, CommandDetail.new(mavenCommand, cmdFormat))
+				table.insert(
+					formattedCmds,
+					FormattedCommand.new(mavenCommand, cmdFormat, fctAddToClassStore, fctDeleteFromClassStore)
+				)
 			end
 		else
 			for _, cmdFormat in ipairs(testMethodCommands) do
@@ -339,38 +367,47 @@ local function create_fully_qualidfied_commands(fullyQualifiedNames, testMethodC
 
 				local mavenCommand = get_maven_command(cmdFormat, templateValues)
 
-				table.insert(cmds, CommandDetail.new(mavenCommand, cmdFormat))
+				table.insert(
+					formattedCmds,
+					FormattedCommand.new(mavenCommand, cmdFormat, fctAddToMethodStore, fctDeleteFromMethodStore)
+				)
 			end
 		end
 
-		table.insert(fqnCommands, CommandInfo.new(fqn, cmds))
+		table.insert(fqnCommands, FullyQualifiedCommand.new(fqn, formattedCmds))
 	end
 	return fqnCommands
 end
 
 --- Shows command editor and returns to test selector on completion
 --- Opens a floating window to edit the command text, then reopens the test selector
---- @param cmd CommandDetail The command to edit
+--- @param fullyQualifiedCommand FullyQualifiedCommand The fully qualified command object
+--- @param formattedCommand FormattedCommand The command to edit
 --- @param getTestMethodCommands function Function that returns command templates for test methods
 --- @param getTestClassCommands function Function that returns command templates for test classes
---- @param fctDeleteFromStore function Callback function(cmd) to delete from store
+--- @param fctDeleteFromMethodStore function Callback function(cmd) to delete from store
 --- @param fctAddToStore function Callback function(cmd) to add to store
 --- @param argumentsStore KeyValueStore Store of custom Maven arguments
 --- @private
 show_command_editor = function(
-	cmd,
+	formattedCommand,
 	getTestMethodCommands,
 	getTestClassCommands,
-	fctDeleteFromStore,
-	fctAddToStore,
+	fctDeleteFromMethodStore,
+	fctAddToMethodStore,
+	fctDeleteFromClassStore,
+	fctAddToClassStore,
 	argumentsStore
 )
-	ui.show_command_editor(cmd.format, fctAddToStore, function()
+	vim.print("jf-debug-> 'formattedCommand': " .. vim.inspect(formattedCommand))
+	ui.show_command_editor(formattedCommand.format, formattedCommand.fctAddToStore, function()
 		_show_test_selector(
 			getTestMethodCommands,
 			getTestClassCommands,
-			fctDeleteFromStore,
-			fctAddToStore,
+			fctDeleteFromMethodStore,
+			fctAddToMethodStore,
+			fctDeleteFromClassStore,
+			fctAddToClassStore,
 			argumentsStore
 		)
 	end)
@@ -382,15 +419,17 @@ end
 --- Bottom pane shows preview of Maven commands with custom arguments
 --- @param getTestMethodCommands function Function that returns command templates for test methods
 --- @param getTestClassCommands function Function that returns command templates for test classes
---- @param fctDeleteFromStore function Callback function(cmd) to delete a command from the store
---- @param fctAddToStore function Callback function(cmd) to add a command to the store
+--- @param fctDeleteFromMethodStore function Callback function(cmd) to delete a command from the store
+--- @param fctAddToMethodStore function Callback function(cmd) to add a command to the store
 --- @param argumentsStore KeyValueStore The store containing custom Maven arguments
 --- @private
 _show_test_selector = function(
 	getTestMethodCommands,
 	getTestClassCommands,
-	fctDeleteFromStore,
-	fctAddToStore,
+	fctDeleteFromMethodStore,
+	fctAddToMethodStore,
+	fctDeleteFromClassStore,
+	fctAddToClassStore,
 	argumentsStore
 )
 	local parser = require("maven-test.tests.parsers.java")
@@ -415,7 +454,15 @@ _show_test_selector = function(
 	local testMethodCommands = getTestMethodCommands()
 	local testClassCommands = getTestClassCommands()
 
-	local fqnCommands = create_fully_qualidfied_commands(fullyQualifiedNames, testMethodCommands, testClassCommands)
+	local fqnCommands = create_fully_qualidfied_commands(
+		fullyQualifiedNames,
+		testMethodCommands,
+		testClassCommands,
+		fctAddToMethodStore,
+		fctAddToClassStore,
+		fctDeleteFromMethodStore,
+		fctDeleteFromClassStore
+	)
 
 	local actionsWin = create_action_window(true)
 	local commandsWin = create_commands_window(false)
@@ -429,8 +476,8 @@ _show_test_selector = function(
 	--- Execute the selected command
 	--- @private
 	local function on_select()
-		local cmd = get_command(fqnCommands, actionsWin, commandsWin)
-		if not cmd then
+		local _, formattedCommand = get_command(fqnCommands, actionsWin, commandsWin)
+		if not formattedCommand then
 			vim.notify("No command selected to run", vim.log.levels.ERROR)
 			return
 		end
@@ -438,7 +485,7 @@ _show_test_selector = function(
 		actionsWin:close()
 		commandsWin:close()
 
-		runner.run_command(cmd.cmd, argumentsStore)
+		runner.run_command(formattedCommand.cmd, argumentsStore)
 	end
 
 	-- Actions window keymaps
@@ -496,9 +543,9 @@ _show_test_selector = function(
 
 	-- Edit command keymap
 	vim.keymap.set("n", "m", function()
-		local cmd = get_command(fqnCommands, actionsWin, commandsWin)
+		local _, formattedCommand = get_command(fqnCommands, actionsWin, commandsWin)
 
-		if not cmd then
+		if not formattedCommand then
 			vim.notify("No command selected to modify", vim.log.levels.ERROR)
 			return
 		end
@@ -507,19 +554,29 @@ _show_test_selector = function(
 		commandsWin:close()
 
 		show_command_editor(
-			cmd,
+			formattedCommand,
 			getTestMethodCommands,
 			getTestClassCommands,
-			fctDeleteFromStore,
-			fctAddToStore,
+			fctDeleteFromMethodStore,
+			fctAddToMethodStore,
+			fctDeleteFromClassStore,
+			fctAddToClassStore,
 			argumentsStore
 		)
 	end, { buffer = commandsWin.buf, nowait = true })
 
 	-- Delete command keymap
 	vim.keymap.set("n", "d", function()
-		delete_command_from_store(fqnCommands, actionsWin, commandsWin, fctDeleteFromStore)
-		fqnCommands = create_fully_qualidfied_commands(fullyQualifiedNames, testMethodCommands)
+		delete_command_from_store(fqnCommands, actionsWin, commandsWin, fctDeleteFromMethodStore)
+		fqnCommands = create_fully_qualidfied_commands(
+			fullyQualifiedNames,
+			testMethodCommands,
+			testClassCommands,
+			fctAddToMethodStore,
+			fctAddToClassStore,
+			fctDeleteFromMethodStore,
+			fctDeleteFromClassStore
+		)
 		update_preview(actionsWin, commandsWin, fqnCommands, argumentsStore)
 	end, { buffer = commandsWin.buf, nowait = true })
 end
@@ -530,8 +587,8 @@ end
 --- Bottom pane: Preview of Maven commands to be executed
 --- @param getTestMethodCommands function Function that returns command templates for test methods
 --- @param getTestClassCommands function Function that returns command templates for test classes
---- @param fctDeleteFromStore function Callback function(cmd) to delete a command from the store
---- @param fctAddToStore function Callback function(cmd) to add a command to the store
+--- @param fctDeleteFromMethodStore function Callback function(cmd) to delete a command from the store
+--- @param fctAddToMethodStore function Callback function(cmd) to add a command to the store
 --- @param argumentsStore KeyValueStore The store containing custom Maven arguments
 --- @usage
 ---   show_test_selector(
@@ -544,11 +601,21 @@ end
 function M.show_test_selector(
 	getTestMethodCommands,
 	getTestClassCommands,
-	fctDeleteFromStore,
-	fctAddToStore,
+	fctDeleteFromMethodStore,
+	fctAddToMethodStore,
+	fctDeleteFromClassStore,
+	fctAddToClassStore,
 	argumentsStore
 )
-	_show_test_selector(getTestMethodCommands, getTestClassCommands, fctDeleteFromStore, fctAddToStore, argumentsStore)
+	_show_test_selector(
+		getTestMethodCommands,
+		getTestClassCommands,
+		fctDeleteFromMethodStore,
+		fctAddToMethodStore,
+		fctDeleteFromClassStore,
+		fctAddToClassStore,
+		argumentsStore
+	)
 end
 
 return M
