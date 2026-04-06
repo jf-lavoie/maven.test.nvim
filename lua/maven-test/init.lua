@@ -1,5 +1,6 @@
 --- Maven test plugin initialization module
---- Handles plugin setup, configuration, and guard against multiple loads
+--- Handles plugin setup, configuration, project detection, and load guards
+--- Supports Maven, Gradle, Go, and Lua project types
 --- @module 'maven-test'
 
 if vim.g.loaded_maven_test then
@@ -28,22 +29,38 @@ end
 --- Default configuration
 --- @class MavenTestConfig
 --- @field maven_command string The Maven command to use (default: "mvn")
---- @field floating_window table Floating window configuration
+--- @field floating_window table Floating window configuration for UI elements
 --- @field floating_window.width number Window width as fraction of editor width (default: 0.8)
 --- @field floating_window.height number Window height as fraction of editor height (default: 0.6)
---- @field floating_window.border string Border style (default: "rounded")
---- @field debug_port number Port for Maven Surefire debug mode (default: 5005)
---- @field data_dir string Directory for storing command data (auto-generated per project)
---- @field projects table Project detection configuration for different build systems
+--- @field floating_window.border string Border style: "rounded", "single", "double", "solid", "none" (default: "rounded")
+--- @field debug_port number Port for remote debugging (Maven Surefire, etc.) (default: 5005)
+--- @field data_dir string Directory for storing command data (auto-generated per project in stdpath("data"))
+--- @field projects table Project detection and configuration for different build systems
 --- @field projects.maven table Maven project configuration
 --- @field projects.maven.root_markers string[] Files indicating a Maven project root (default: {"pom.xml"})
---- @field projects.maven.type string Project language type (default: "java")
+--- @field projects.maven.pattern string File pattern for project type detection (default: "java")
+--- @field projects.maven.test_commands string[] Default commands for running all tests
+--- @field projects.maven.test_file_commands string[] Command templates for running test class (placeholders: {package}, {class})
+--- @field projects.maven.test_method_commands string[] Command templates for running test method (placeholders: {package}, {class}, {method})
+--- @field projects.maven.commands string[] Maven lifecycle commands for command UI
 --- @field projects.gradle table Gradle project configuration
 --- @field projects.gradle.root_markers string[] Files indicating a Gradle project root
---- @field projects.gradle.type string Project language type (default: "java")
+--- @field projects.gradle.pattern string File pattern for project type detection (default: "java")
+--- @field projects.gradle.test_commands string[] Default commands for running all tests
+--- @field projects.gradle.test_file_commands string[] Command templates for running test class
+--- @field projects.gradle.test_method_commands string[] Command templates for running test method
 --- @field projects.go table Go project configuration
 --- @field projects.go.root_markers string[] Files indicating a Go project root (default: {"go.mod"})
---- @field projects.go.type string Project language type (default: "go")
+--- @field projects.go.pattern string File pattern for project type detection (default: "go")
+--- @field projects.go.test_commands string[] Default commands for running all tests
+--- @field projects.go.test_file_commands string[] Command templates for running test file
+--- @field projects.go.test_method_commands string[] Command templates for running test function
+--- @field projects.lua table Lua project configuration
+--- @field projects.lua.root_markers string[] Files indicating a Lua project root
+--- @field projects.lua.pattern string File pattern for project type detection (default: "lua")
+--- @field projects.lua.test_commands string[] Default commands for running all tests
+--- @field projects.lua.test_file_commands string[] Command templates for running test file
+--- @field projects.lua.test_method_commands string[] Command templates for running test case
 M.config = {
 	maven_command = "mvn",
 	floating_window = {
@@ -99,9 +116,22 @@ M.config = {
 	},
 }
 
+--- ProjectConfig class for managing detected project configurations
+--- @class ProjectConfig
+--- @field type string The project type (e.g., "maven", "gradle", "go", "lua")
+--- @field root_markers string[] Files that indicate project root
+--- @field pattern string File pattern for project detection
+--- @field test_commands string[] Commands for running all tests
+--- @field test_file_commands string[] Command templates for running test file/class
+--- @field test_method_commands string[] Command templates for running test method/function
+--- @field commands string[]? Optional list of common project commands (e.g., Maven lifecycle)
 M.ProjectConfig = {}
 M.ProjectConfig.__index = M.ProjectConfig
 
+--- Create a new ProjectConfig instance
+--- @param project_type string The type of project (e.g., "maven", "gradle")
+--- @param configuration table Configuration for this project type from M.config.projects
+--- @return ProjectConfig A new ProjectConfig instance
 function M.ProjectConfig:new(project_type, configuration)
 	local project = setmetatable(vim.tbl_extend("force", { type = project_type }, configuration), self)
 
@@ -109,14 +139,18 @@ function M.ProjectConfig:new(project_type, configuration)
 end
 
 --- Setup the maven-test plugin
---- Merges user configuration with defaults and registers commands
---- Safe to call multiple times - will only initialize once
+--- Detects project type(s), merges user configuration with defaults, and registers user commands
+--- Safe to call multiple times - will only initialize once (checks vim.g.loaded_maven_test)
+--- Supports multiple project types in the same workspace
 --- @param opts? MavenTestConfig User configuration to override defaults
 --- @usage
 ---   require('maven-test').setup({
 ---     maven_command = "mvn",
 ---     debug_port = 5005,
----     floating_window = { width = 0.8, height = 0.6, border = "rounded" }
+---     floating_window = { width = 0.8, height = 0.6, border = "rounded" },
+---     projects = {
+---       maven = { root_markers = { "pom.xml" } }
+---     }
 ---   })
 function M.setup(opts)
 	if vim.g.loaded_maven_test == 1 then

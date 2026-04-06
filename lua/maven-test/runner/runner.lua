@@ -11,6 +11,8 @@ local M = {}
 --- @return string The templated string with placeholders replaced
 --- @private
 local function template(str, vars)
+	vim.print("jf-debug-> 'vars': " .. vim.inspect(vars))
+	vim.print("jf-debug-> 'str': " .. vim.inspect(str))
 	return require("maven-test.template").template(str, vars)
 end
 
@@ -78,18 +80,18 @@ end
 --- @param command string The Maven command template with placeholders
 --- @usage
 ---   runner.run_test_class("mvn test -Dtest={class}")
-function M.run_test_class(type, command, argumentsStore)
-	local class_name = require("maven-test.tests.parsers").get_test_class(type)
-	local package_name = require("maven-test.tests.parsers").get_package_name(type)
+function M.run_test_class(pattern, command, argumentsStore)
+	local class = require("maven-test.tests.parsers").get_test_class(pattern)
+	local package_name = require("maven-test.tests.parsers").get_package_name(pattern)
 
-	if not class_name or not package_name then
+	if not class or not package_name then
 		vim.notify("Could not determine test class or package", vim.log.levels.ERROR)
 		return
 	end
 
 	local templateValues = {
 		package = package_name,
-		class = class_name,
+		class = class.name,
 	}
 
 	local localCommand = template(command, templateValues)
