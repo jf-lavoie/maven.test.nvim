@@ -34,7 +34,18 @@ end
 --- @param filetype string Language identifier ("java" or "go")
 --- @return JavaFullyQualifiedMethodName[]|GoFullyQualifiedMethodName[]|nil Array of fully qualified method name objects, or nil if package/class not found
 function M.get_fully_qualified_test_method_names(filetype)
-	return require("maven-test.tests.parsers." .. filetype).get_fully_qualified_test_method_names()
+	local fqnmn = require("maven-test.tests.parsers." .. filetype).get_fully_qualified_test_method_names()
+
+	for i, met in ipairs(fqnmn) do
+		if met.method.is_current then
+			-- Move current test to the top of the list
+			table.remove(fqnmn, i)
+			table.insert(fqnmn, 1, met)
+			break
+		end
+	end
+
+	return fqnmn
 end
 
 --- Get the test file name from the current buffer
