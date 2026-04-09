@@ -242,7 +242,7 @@ local function show_fully_qualified_names(theWin, fqnCommandsInfo)
 	vim.api.nvim_win_set_option(
 		theWin.win,
 		"winbar",
-		"%#StatusLine#<CR> Run command | <space> Select command | <esc>, <q> Quit"
+		"%#StatusLine#<CR> Run command | <space> Select command | <a> show custom arguments | <esc>, <q> Quit"
 	)
 end
 
@@ -451,6 +451,23 @@ _show_test_selector = function(
 			create_fully_qualidfied_commands(fullyQualifiedNames, testMethodCommands, fctAddToStore, fctDeleteFromStore)
 		update_preview(actionsWin, commandsWin, fqnCommands, argumentsStore)
 	end, { buffer = commandsWin.buf, nowait = true })
+
+	vim.keymap.set("n", "a", function()
+		actionsWin:close()
+		commandsWin:close()
+
+		require("maven-test.arguments.ui").external_default_arguments_editor(argumentsStore, function()
+			_show_test_selector(
+				pattern,
+				getTestCommands,
+				fctDeleteFromStore,
+				fctAddToStore,
+				fctOnSelect,
+				fullyQualifiedNames,
+				argumentsStore
+			)
+		end)
+	end, { buffer = actionsWin.buf, nowait = true })
 end
 
 --- Shows the test selector UI
