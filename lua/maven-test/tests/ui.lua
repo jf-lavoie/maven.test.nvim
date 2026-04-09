@@ -19,83 +19,23 @@ local col = ui.col
 --- Forward declarations for circular dependencies
 local show_command_editor, _show_test_selector
 
---- Fully qualified name class
---- Represents a test identifier with its line number
---- @class FullyQualifiedName
---- @field package_name string The Java package name
---- @field class string The class name
---- @field test_name string? The test method or field name (nil for class-level tests)
---- @field line number The line number where the test is defined
---- @field is_current boolean Whether this test is the current one under the cursor
-local FullyQualifiedName = {}
-FullyQualifiedName.__index = FullyQualifiedName
-
---- Creates a new FullyQualifiedName instance
---- @param package_name string The Java package name (e.g., "com.example")
---- @param class string The class name
---- @param test_name string? The test method or field name (nil for class-level tests)
---- @param line number The line number where the test is defined
---- @param is_current boolean Whether this test is at the current cursor position
---- @return FullyQualifiedName
-function FullyQualifiedName.new(package_name, class, test_name, line, is_current)
-	local self = setmetatable({}, FullyQualifiedName)
-	self.package_name = package_name
-	self.class = class
-	self.test_name = test_name
-	self.line = line
-	self.is_current = is_current
-	return self
-end
-
---- Generates the fully qualified name text for the test
---- Returns either "package.Class#method" for test methods or "package.Class" for class-level tests
---- @return string The fully qualified test name in Maven format
-function FullyQualifiedName:text()
-	if self.test_name then
-		return self.package_name .. "." .. self.class .. "#" .. self.test_name
-	else
-		return self.package_name .. "." .. self.class
-	end
-end
-
---- Checks if this represents a class-level test
---- Returns true if test_name is nil (indicating a class-level test action)
---- @return boolean True if this is a class-level test, false if it's a method-level test
-function FullyQualifiedName:isClass()
-	return self.test_name == nil
-end
-
---- Converts the test identifier to a human-readable string
---- Combines the fully qualified name with its line number
---- @return string The test identifier in format "package.Class#method (line N)"
-function FullyQualifiedName:toString()
-	return self:text() .. " (line " .. self.line .. ")"
-end
-
 --- Fully qualified command class
---- Links a test identifier (FullyQualifiedName) with its associated formatted Maven commands
+--- Links a test method or class to its corresponding formatted Maven commands
 --- @class FullyQualifiedCommand
---- @field fqn FullyQualifiedName The test identifier
+--- @field fullyQualifiedMethodName FullyQualifiedMethodName The fully qualified name object (Java or Go)
 --- @field formattedCommands FormattedCommand[] Array of formatted Maven commands for this test
 local FullyQualifiedCommand = {}
 FullyQualifiedCommand.__index = FullyQualifiedCommand
 
 --- Creates a new FullyQualifiedCommand
---- @param fullyQualifiedName FullyQualifiedName The test identifier
+--- @param fullyQualifiedMethodName FullyQualifiedMethodName The fully qualified name object
 --- @param formattedCommands FormattedCommand[] Array of formatted commands
 --- @return FullyQualifiedCommand
-function FullyQualifiedCommand.new(fullyQualifiedName, formattedCommands)
+function FullyQualifiedCommand.new(fullyQualifiedMethodName, formattedCommands)
 	local self = setmetatable({}, FullyQualifiedCommand)
-	self.fqn = fullyQualifiedName
+	self.fullyQualifiedMethodName = fullyQualifiedMethodName
 	self.formattedCommands = formattedCommands
 	return self
-end
-
---- Checks if this command is for a class-level test
---- Delegates to the underlying FullyQualifiedName's isClass method
---- @return boolean True if this is a class-level test, false if it's a method-level test
-function FullyQualifiedCommand:isClass()
-	return self.fqn:isClass()
 end
 
 --- Formatted command class
@@ -156,7 +96,6 @@ end
 --- @param fqnCommands FullyQualifiedCommand[] Array of fully qualified commands
 --- @param actionsWin FloatingWindow The actions window
 --- @param commandsWin FloatingWindow The commands window
---- @param fctDeleteFromStore function Callback to delete from store
 --- @private
 local function delete_command_from_store(fqnCommands, actionsWin, commandsWin)
 	local fullyQualifiedCommand, formattedCommand = get_command(fqnCommands, actionsWin, commandsWin)
@@ -267,6 +206,7 @@ local function update_preview(actionsWin, commandsWin, fqnCommands, argumentsSto
 end
 
 --- Displays fully qualified names in the actions window
+--- Renders test method names with indicators for current test
 --- @param theWin FloatingWindow The window to update
 --- @param fqnCommandsInfo FullyQualifiedCommand[] Array of fully qualified commands
 --- @private
@@ -274,7 +214,7 @@ local function show_fully_qualified_names(theWin, fqnCommandsInfo)
 	local lines = {}
 
 	for _, fqn in ipairs(fqnCommandsInfo) do
-		table.insert(lines, fqn.fqn:text() .. " // line " .. fqn.fqn.line)
+		table.insert(lines, fqn.fullyQualifiedMethodName:displayString())
 	end
 
 	vim.api.nvim_buf_set_option(theWin.buf, "modifiable", true)
@@ -288,95 +228,51 @@ local function show_fully_qualified_names(theWin, fqnCommandsInfo)
 	)
 end
 
---- Create fully qualified test names from package, class, and methods
---- First entry is the test class, followed by individual test methods
---- @param package_name string The Java package name
---- @param class table Table with 'name', 'is_current' and 'line' fields for the test class
---- @param testMethods table[] Array of tables, each with 'name' and 'line' fields
---- @return FullyQualifiedName[] Array of fully qualified name objects
---- @private
-local function create_fully_qualified_names(package_name, class, testMethods)
-	local names = {}
-
-	table.insert(names, FullyQualifiedName.new(package_name, class.name, nil, class.line, false))
-
-	for _, test in ipairs(testMethods) do
-		table.insert(names, FullyQualifiedName.new(package_name, class.name, test.name, test.line, test.is_current))
-	end
-	return names
-end
-
---- Creates command info objects by combining FQNs with command templates
+--- Creates fully qualified command objects from test method names and command templates
+--- Substitutes template placeholders (package, class, method) with actual values
 --- Moves the current test (under cursor) to the top of the list
---- Expands command templates with test-specific values (package, class, method)
---- @param fullyQualifiedNames FullyQualifiedName[] Array of test identifiers
---- @param testMethodCommands string[] Array of command templates for test methods
---- @param testClassCommands string[] Array of command templates for test classes
---- @param fctAddToMethodStore function Callback to add method commands to store
---- @param fctAddToClassStore function Callback to add class commands to store
---- @param fctDeleteFromMethodStore function Callback to delete method commands from store
---- @param fctDeleteFromClassStore function Callback to delete class commands from store
---- @return FullyQualifiedCommand[] Array of fully qualified commands linking each test to its commands
+--- @param fullyQualifiedMethodNames FullyQualifiedMethodName[] Array of fully qualified method names from parser
+--- @param testMethodCommands string[] Array of command templates with placeholders
+--- @param fctAddToMethodStore function Callback function(cmd) to add commands to store
+--- @param fctDeleteFromMethodStore function Callback function(cmd) to delete commands from store
+--- @return FullyQualifiedCommand[] Array of fully qualified commands ready for display and execution
 --- @private
 local function create_fully_qualidfied_commands(
-	fullyQualifiedNames,
+	fullyQualifiedMethodNames,
 	testMethodCommands,
-	testClassCommands,
 	fctAddToMethodStore,
-	fctAddToClassStore,
-	fctDeleteFromMethodStore,
-	fctDeleteFromClassStore
+	fctDeleteFromMethodStore
 )
 	local fqnCommands = {}
 
-	local localFullyQualifiedNames = fullyQualifiedNames
-
-	for i, fqn in ipairs(localFullyQualifiedNames) do
-		if fqn.is_current then
+	for i, met in ipairs(fullyQualifiedMethodNames) do
+		if met.method.is_current then
 			-- Move current test to the top of the list
-			table.remove(localFullyQualifiedNames, i)
-			table.insert(localFullyQualifiedNames, 1, fqn)
+			table.remove(fullyQualifiedMethodNames, i)
+			table.insert(fullyQualifiedMethodNames, 1, met)
 			break
 		end
 	end
 
-	for _, fqn in ipairs(localFullyQualifiedNames) do
+	for _, fqn in ipairs(fullyQualifiedMethodNames) do
 		local formattedCmds = {}
 
-		if fqn:isClass() then
-			for _, cmdFormat in ipairs(testClassCommands) do
-				local templateValues = {
-					package = fqn.package_name,
-					class = fqn.class,
-					method = fqn.test_name,
-				}
+		local templateValues = fqn:templateValues()
 
-				local mavenCommand = get_maven_command(cmdFormat, templateValues)
+		for _, cmdFormat in ipairs(testMethodCommands) do
+			local mavenCommand = get_maven_command(cmdFormat, templateValues)
 
-				table.insert(
-					formattedCmds,
-					FormattedCommand.new(mavenCommand, cmdFormat, fctAddToClassStore, fctDeleteFromClassStore)
-				)
-			end
-		else
-			for _, cmdFormat in ipairs(testMethodCommands) do
-				local templateValues = {
-					package = fqn.package_name,
-					class = fqn.class,
-					method = fqn.test_name,
-				}
-
-				local mavenCommand = get_maven_command(cmdFormat, templateValues)
-
-				table.insert(
-					formattedCmds,
-					FormattedCommand.new(mavenCommand, cmdFormat, fctAddToMethodStore, fctDeleteFromMethodStore)
-				)
-			end
+			table.insert(
+				formattedCmds,
+				FormattedCommand.new(mavenCommand, cmdFormat, fctAddToMethodStore, fctDeleteFromMethodStore)
+			)
 		end
 
-		table.insert(fqnCommands, FullyQualifiedCommand.new(fqn, formattedCmds))
+		local fqc = FullyQualifiedCommand.new(fqn, formattedCmds)
+
+		table.insert(fqnCommands, fqc)
 	end
+
 	return fqnCommands
 end
 
@@ -385,33 +281,24 @@ end
 --- @param pattern string The pattern to match test methods and classes
 --- @param formattedCommand FormattedCommand The command to edit
 --- @param getTestMethodCommands function Function that returns command templates for test methods
---- @param getTestClassCommands function Function that returns command templates for test classes
 --- @param fctDeleteFromMethodStore function Callback to delete method commands from store
 --- @param fctAddToMethodStore function Callback to add method commands to store
---- @param fctDeleteFromClassStore function Callback to delete class commands from store
---- @param fctAddToClassStore function Callback to add class commands to store
 --- @param argumentsStore KeyValueStore Store of custom Maven arguments
 --- @private
 show_command_editor = function(
 	pattern,
 	formattedCommand,
 	getTestMethodCommands,
-	getTestClassCommands,
 	fctDeleteFromMethodStore,
 	fctAddToMethodStore,
-	fctDeleteFromClassStore,
-	fctAddToClassStore,
 	argumentsStore
 )
 	ui.show_command_editor(formattedCommand.format, formattedCommand.fctAddToStore, function()
 		_show_test_selector(
 			pattern,
 			getTestMethodCommands,
-			getTestClassCommands,
 			fctDeleteFromMethodStore,
 			fctAddToMethodStore,
-			fctDeleteFromClassStore,
-			fctAddToClassStore,
 			argumentsStore
 		)
 	end)
@@ -423,53 +310,44 @@ end
 --- Bottom pane shows preview of Maven commands with custom arguments
 --- @param pattern string The pattern to match test methods and classes
 --- @param getTestMethodCommands function Function that returns command templates for test methods
---- @param getTestClassCommands function Function that returns command templates for test classes
 --- @param fctDeleteFromMethodStore function Callback to delete method commands from the store
 --- @param fctAddToMethodStore function Callback to add method commands to the store
---- @param fctDeleteFromClassStore function Callback to delete class commands from the store
---- @param fctAddToClassStore function Callback to add class commands to the store
 --- @param argumentsStore KeyValueStore The store containing custom Maven arguments
 --- @private
 _show_test_selector = function(
 	pattern,
 	getTestMethodCommands,
-	getTestClassCommands,
 	fctDeleteFromMethodStore,
 	fctAddToMethodStore,
-	fctDeleteFromClassStore,
-	fctAddToClassStore,
 	argumentsStore
 )
-	local parser = require("maven-test.tests.parsers")
+	-- local parser = require("maven-test.tests.parsers")
 	local runner = require("maven-test.runner.runner")
 
-	local testMethods = parser.get_test_methods(pattern)
-	local class = parser.get_test_class(pattern)
-	local package_name = parser.get_package_name(pattern)
+	-- local testMethods = parser.get_test_methods(pattern)
+	-- local class = parser.get_test_class(pattern)
+	-- local package_name = parser.get_package_name(pattern)
 
-	if #testMethods == 0 then
-		vim.notify("No test methods found in current file", vim.log.levels.WARN)
-		return
-	end
+	local fullyQualifiedMethodNames = require("maven-test.tests.parsers").get_fully_qualified_test_method_names(pattern)
+	-- if #fullyQualifiedNames == 0 then
+	-- 	vim.notify("No test methods found in current file", vim.log.levels.WARN)
+	-- 	return
+	-- end
 
-	if not class or not package_name then
-		vim.notify("Could not determine test class or package", vim.log.levels.ERROR)
-		return
-	end
+	-- if not class or not package_name then
+	-- 	vim.notify("Could not determine test class or package", vim.log.levels.ERROR)
+	-- 	return
+	-- end
 
-	local fullyQualifiedNames = create_fully_qualified_names(package_name, class, testMethods)
+	-- local fullyQualifiedNames = create_fully_qualified_names(package_name, class, testMethods)
 
 	local testMethodCommands = getTestMethodCommands()
-	local testClassCommands = getTestClassCommands()
 
 	local fqnCommands = create_fully_qualidfied_commands(
-		fullyQualifiedNames,
+		fullyQualifiedMethodNames,
 		testMethodCommands,
-		testClassCommands,
 		fctAddToMethodStore,
-		fctAddToClassStore,
-		fctDeleteFromMethodStore,
-		fctDeleteFromClassStore
+		fctDeleteFromMethodStore
 	)
 
 	local actionsWin = create_action_window(true)
@@ -562,13 +440,11 @@ _show_test_selector = function(
 		commandsWin:close()
 
 		show_command_editor(
+			pattern,
 			formattedCommand,
 			getTestMethodCommands,
-			getTestClassCommands,
 			fctDeleteFromMethodStore,
 			fctAddToMethodStore,
-			fctDeleteFromClassStore,
-			fctAddToClassStore,
 			argumentsStore
 		)
 	end, { buffer = commandsWin.buf, nowait = true })
@@ -577,13 +453,10 @@ _show_test_selector = function(
 	vim.keymap.set("n", "d", function()
 		delete_command_from_store(fqnCommands, actionsWin, commandsWin)
 		fqnCommands = create_fully_qualidfied_commands(
-			fullyQualifiedNames,
+			fullyQualifiedMethodNames,
 			testMethodCommands,
-			testClassCommands,
 			fctAddToMethodStore,
-			fctAddToClassStore,
-			fctDeleteFromMethodStore,
-			fctDeleteFromClassStore
+			fctDeleteFromMethodStore
 		)
 		update_preview(actionsWin, commandsWin, fqnCommands, argumentsStore)
 	end, { buffer = commandsWin.buf, nowait = true })
@@ -595,42 +468,24 @@ end
 --- Bottom pane: Preview of Maven commands to be executed
 --- @param pattern string The pattern to match test methods and classes
 --- @param getTestMethodCommands function Function that returns command templates for test methods
---- @param getTestClassCommands function Function that returns command templates for test classes
 --- @param fctDeleteFromMethodStore function Callback to delete method commands from the store
 --- @param fctAddToMethodStore function Callback to add method commands to the store
---- @param fctDeleteFromClassStore function Callback to delete class commands from the store
---- @param fctAddToClassStore function Callback to add class commands to the store
 --- @param argumentsStore KeyValueStore The store containing custom Maven arguments
 --- @usage
 ---   show_test_selector(
 ---     function() return store.get("run_method") end,
----     function() return store.get("run_class") end,
 ---     function(cmd) store.remove("run_method", cmd) end,
 ---     function(cmd) store.add("run_method", cmd) end,
----     function(cmd) store.remove("run_class", cmd) end,
----     function(cmd) store.add("run_class", cmd) end,
 ---     argumentsStore
 ---   )
 function M.show_test_selector(
 	pattern,
 	getTestMethodCommands,
-	getTestClassCommands,
 	fctDeleteFromMethodStore,
 	fctAddToMethodStore,
-	fctDeleteFromClassStore,
-	fctAddToClassStore,
 	argumentsStore
 )
-	_show_test_selector(
-		pattern,
-		getTestMethodCommands,
-		getTestClassCommands,
-		fctDeleteFromMethodStore,
-		fctAddToMethodStore,
-		fctDeleteFromClassStore,
-		fctAddToClassStore,
-		argumentsStore
-	)
+	_show_test_selector(pattern, getTestMethodCommands, fctDeleteFromMethodStore, fctAddToMethodStore, argumentsStore)
 end
 
 return M

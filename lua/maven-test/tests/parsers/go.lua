@@ -119,4 +119,63 @@ end
 --- 	return vim.fn.expand("%:t:r")
 --- end
 
+--- Get fully qualified test method names for all test functions in the current buffer
+--- Creates GoFullyQualifiedMethodName objects containing package, file path, and method info
+--- @return GoFullyQualifiedMethodName[]? Array of fully qualified method name objects, or nil if package not found
+--- @usage
+---   local fqn_list = parser.get_fully_qualified_test_method_names()
+---   if fqn_list then
+---     for _, fqn in ipairs(fqn_list) do
+---       print(fqn:fullyQualifiedMethodName())
+---     end
+---   end
+function M.get_fully_qualified_test_method_names()
+	local FullyQualifiedName = require("maven-test.tests.parsers.FullyQualifiedNames")
+	local GoFullyQualifiedMethodName = FullyQualifiedName.GoFullyQualifiedMethodName
+	local fqn_list = {}
+
+	local package_name = M.get_package_name()
+	if not package_name then
+		return nil
+	end
+
+	local package_ = FullyQualifiedName.Package.new(package_name)
+
+	local methods = M.get_test_methods()
+
+	for _, method in ipairs(methods) do
+		table.insert(
+			fqn_list,
+			GoFullyQualifiedMethodName.new(
+				package_,
+				vim.api.nvim_buf_get_name(0),
+				FullyQualifiedName.Method.new(method.name, method.line, method.is_current)
+			)
+		)
+	end
+
+	return fqn_list
+end
+
+--- Get the fully qualified file name for the current Go test file
+--- Creates a GoFullyQualifiedFileName object containing package and file path
+--- @return GoFullyQualifiedFileName? The fully qualified file name object, or nil if package not found
+--- @usage
+---   local fqn_file = parser.get_test_file_name()
+---   if fqn_file then
+---     print("Package file: " .. fqn_file:fullyQualifiedFileName())
+---   end
+M.get_test_file_name = function()
+	local FullyQualifiedName = require("maven-test.tests.parsers.FullyQualifiedNames")
+	local GoFullyQualifiedFileName = FullyQualifiedName.GoFullyQualifiedFileName
+
+	local package_name = M.get_package_name()
+	if not package_name then
+		return nil
+	end
+	local package_ = FullyQualifiedName.Package.new(package_name)
+
+	return GoFullyQualifiedFileName.new(package_, vim.api.nvim_buf_get_name(0))
+end
+
 return M

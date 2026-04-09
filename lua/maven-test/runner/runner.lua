@@ -11,8 +11,6 @@ local M = {}
 --- @return string The templated string with placeholders replaced
 --- @private
 local function template(str, vars)
-	vim.print("jf-debug-> 'vars': " .. vim.inspect(vars))
-	vim.print("jf-debug-> 'str': " .. vim.inspect(str))
 	return require("maven-test.template").template(str, vars)
 end
 

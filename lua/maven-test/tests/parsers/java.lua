@@ -155,7 +155,11 @@ end
 --- Extract the package name from the current Java file
 --- Searches the first 50 lines for a package declaration
 --- @return string|nil The package name (e.g., "com.example.app"), or nil if not found
---- @private
+--- @usage
+---   local package_name = parser.get_package_name()
+---   if package_name then
+---     print("Package: " .. package_name)
+---   end
 function M.get_package_name()
 	local bufnr = vim.api.nvim_get_current_buf()
 	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, 50, false)
@@ -210,6 +214,77 @@ function M.get_test_class()
 	end
 
 	return nil
+end
+
+--- Get fully qualified test method names for all test methods in the current buffer
+--- Creates JavaFullyQualifiedMethodName objects containing package, class, file path, and method info
+--- @return JavaFullyQualifiedMethodName[]? Array of fully qualified method name objects, or nil if package or class not found
+--- @usage
+---   local fqn_list = parser.get_fully_qualified_test_method_names()
+---   if fqn_list then
+---     for _, fqn in ipairs(fqn_list) do
+---       print(fqn:fullyQualifiedMethodName())
+---     end
+---   end
+function M.get_fully_qualified_test_method_names()
+	local FullyQualifiedName = require("maven-test.tests.parsers.FullyQualifiedNames")
+	local JavaFullyQualifiedMethodName = FullyQualifiedName.JavaFullyQualifiedMethodName
+	local fqn_list = {}
+
+	local package_name = M.get_package_name()
+	if not package_name then
+		return nil
+	end
+	local package_ = FullyQualifiedName.Package.new(package_name)
+
+	local class = M.get_test_class()
+	if not class then
+		return nil
+	end
+	local class_ = FullyQualifiedName.Class.new(class.name, class.line)
+
+	local methods = M.get_test_methods()
+
+	for _, method in ipairs(methods) do
+		table.insert(
+			fqn_list,
+			JavaFullyQualifiedMethodName.new(
+				package_,
+				class_,
+				vim.api.nvim_buf_get_name(0),
+				FullyQualifiedName.Method.new(method.name, method.line, method.is_current)
+			)
+		)
+	end
+
+	return fqn_list
+end
+
+--- Get the fully qualified class name for the current Java test file
+--- Creates a JavaFullyQualifiedClassName object containing package, class, and file path
+--- @return JavaFullyQualifiedClassName? The fully qualified class name object, or nil if package or class not found
+--- @usage
+---   local fqn_class = parser.get_test_file_name()
+---   if fqn_class then
+---     print("Fully qualified class: " .. fqn_class:fullyQualifiedFileName())
+---   end
+M.get_test_file_name = function()
+	local FullyQualifiedName = require("maven-test.tests.parsers.FullyQualifiedNames")
+	local JavaFullyQualifiedClassName = FullyQualifiedName.JavaFullyQualifiedClassName
+
+	local package_name = M.get_package_name()
+	if not package_name then
+		return nil
+	end
+	local package_ = FullyQualifiedName.Package.new(package_name)
+
+	local class = M.get_test_class()
+	if not class then
+		return nil
+	end
+	local class_ = FullyQualifiedName.Class.new(class.name, class.line)
+
+	return JavaFullyQualifiedClassName.new(package_, class_, vim.api.nvim_buf_get_name(0))
 end
 
 return M
