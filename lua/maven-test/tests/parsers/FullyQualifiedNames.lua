@@ -7,6 +7,37 @@
 --- @module 'maven-test.tests.parsers.FullyQualifiedNames'
 local M = {}
 
+--- Represents a project-level fully qualified name for project-wide test execution
+--- Used when running all tests in the project or executing project-level commands
+--- @class ProjectFullyQualifiedName
+M.ProjectFullyQualifiedName = {}
+M.ProjectFullyQualifiedName.__index = M.ProjectFullyQualifiedName
+
+--- Creates a new ProjectFullyQualifiedName instance
+--- @return ProjectFullyQualifiedName A new instance for project-level test execution
+function M.ProjectFullyQualifiedName.new()
+	local self = setmetatable({}, M.ProjectFullyQualifiedName)
+	return self
+end
+
+--- Returns the fully qualified file name for project-level execution
+--- @return string Always returns "all" to indicate all tests
+function M.ProjectFullyQualifiedName:fullyQualifiedFileName()
+	return "all"
+end
+
+--- Returns a display string for UI presentation
+--- @return string The display string "(all)" indicating all tests
+function M.ProjectFullyQualifiedName:displayString()
+	return "(all)"
+end
+
+--- Returns template values for command formatting
+--- @return table Empty table as project-level commands don't need template substitution
+function M.ProjectFullyQualifiedName:templateValues()
+	return {}
+end
+
 --- Represents a fully qualified Java class name for test execution
 --- Used when running all tests in a Java class via Maven's -Dtest parameter
 --- @class JavaFullyQualifiedClassName
@@ -35,6 +66,8 @@ function M.JavaFullyQualifiedClassName:fullyQualifiedFileName()
 	return self.package_.name .. "." .. self.class_.name
 end
 
+--- Returns a display string for the Java class
+--- @return string The fully qualified class name (e.g., "com.example.MyClass")
 function M.JavaFullyQualifiedClassName:displayString()
 	return self.package_.name .. "." .. self.class_.name
 end
@@ -77,6 +110,8 @@ function M.GoFullyQualifiedFileName:fullyQualifiedFileName()
 	return self.filepath
 end
 
+--- Returns a display string for the Go package file
+--- @return string The absolute file path
 function M.GoFullyQualifiedFileName:displayString()
 	return self.filepath
 end

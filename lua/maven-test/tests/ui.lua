@@ -51,17 +51,17 @@ function FullyQualifiedCommand.new(fullyQualifiedMethodName, formattedCommands)
 end
 
 --- Formatted command class
---- Represents a Maven command that has been formatted with test-specific values
+--- Represents a build command (Maven/Gradle) that has been formatted with test-specific values
 --- @class FormattedCommand
---- @field cmd string The fully formatted Maven command ready to execute
+--- @field cmd string The fully formatted build command ready to execute
 --- @field format string The original command template before substitution
 --- @field fctAddToStore function Callback function(cmd) to add this command to the store when modified
---- @field fctDeleteFromStore function Callback function(cmd) to add this command to the store when modified
+--- @field fctDeleteFromStore function Callback function(cmd) to delete this command from the store when modified
 local FormattedCommand = {}
 FormattedCommand.__index = FormattedCommand
 
 --- Creates a new FormattedCommand
---- @param cmd string The formatted Maven command
+--- @param cmd string The formatted build command
 --- @param format string The command template
 --- @param fctAddToStore function Callback function(cmd) to add this command to the store when modified
 --- @param fctDeleteFromStore function Callback function(cmd) to delete this command from the store when modified
@@ -144,7 +144,7 @@ local function create_action_window(enter)
 end
 
 --- Create the bottom floating window for command preview
---- Displays Maven/build commands with active custom arguments appended
+--- Displays build commands (Maven/Gradle) with active custom arguments appended
 --- Uses shell syntax highlighting for better readability
 --- @param enter boolean Whether to enter the window on creation
 --- @return FloatingWindow The created commands preview window
@@ -172,9 +172,9 @@ local function onBufLeave(actionsWin, commandsWin)
 end
 
 --- Formats a build command with template values
---- Substitutes placeholders like %{package}, %{class}, %{method} with actual values
+--- Substitutes placeholders like %{package}, %{class}, %{method}, %{filepath}, %{dirname} with actual values
 --- @param command string The command template with placeholders (e.g., "mvn test -Dtest=%{class}#%{method}")
---- @param templateValues table The values to substitute (keys: package, class, method, filepath)
+--- @param templateValues table The values to substitute (keys: package, class, method, filepath, dirname)
 --- @return string The formatted command ready for execution
 --- @private
 local function get_maven_command(command, templateValues)
@@ -187,7 +187,7 @@ end
 --- @param actionsWin FloatingWindow The actions window (top pane)
 --- @param commandsWin FloatingWindow The commands preview window (bottom pane)
 --- @param fqnCommands FullyQualifiedCommand[] Array of fully qualified commands linking tests to commands
---- @param argumentsStore KeyValueStore The store containing custom Maven arguments
+--- @param argumentsStore KeyValueStore The store containing custom build arguments (Maven/Gradle)
 --- @private
 local function update_preview(actionsWin, commandsWin, fqnCommands, argumentsStore)
 	local line = vim.api.nvim_win_get_cursor(actionsWin.win)[1]
@@ -282,12 +282,14 @@ end
 
 --- Shows command editor and returns to test selector on completion
 --- Opens a floating window to edit the command text, then reopens the test selector
---- @param pattern string The pattern to match test methods and classes
+--- @param pattern string The filetype to match test methods and classes ("java" or "go")
 --- @param formattedCommand FormattedCommand The command to edit
 --- @param getTestCommands function Function that returns command templates for test methods
 --- @param fctDeleteFromStore function Callback to delete method commands from store
 --- @param fctAddToStore function Callback to add method commands to store
---- @param argumentsStore KeyValueStore Store of custom Maven arguments
+--- @param fctOnSelect function Callback executed when a command is selected
+--- @param fullyQualifiedNames JavaFullyQualifiedMethodName[]|JavaFullyQualifiedClassName[]|GoFullyQualifiedMethodName[]|GoFullyQualifiedFileName[]|ProjectFullyQualifiedName[]|nil Array of fully qualified name objects
+--- @param argumentsStore KeyValueStore Store of custom build arguments
 --- @private
 show_command_editor = function(
 	pattern,
@@ -313,14 +315,16 @@ show_command_editor = function(
 end
 
 --- Internal implementation of test selector UI
---- Parses the current Java file for tests and creates a two-pane layout
+--- Parses the current file for tests and creates a two-pane layout
 --- Top pane shows test methods and class-level actions
---- Bottom pane shows preview of Maven commands with custom arguments
---- @param pattern string The pattern to match test methods and classes
+--- Bottom pane shows preview of build commands with custom arguments
+--- @param pattern string The filetype to match test methods and classes ("java" or "go")
 --- @param getTestCommands function Function that returns command templates for test methods
 --- @param fctDeleteFromStore function Callback to delete method commands from the store
 --- @param fctAddToStore function Callback to add method commands to the store
---- @param argumentsStore KeyValueStore The store containing custom Maven arguments
+--- @param fctOnSelect function Callback executed when a command is selected
+--- @param fullyQualifiedNames JavaFullyQualifiedMethodName[]|JavaFullyQualifiedClassName[]|GoFullyQualifiedMethodName[]|GoFullyQualifiedFileName[]|ProjectFullyQualifiedName[]|nil Array of fully qualified name objects
+--- @param argumentsStore KeyValueStore The store containing custom build arguments
 --- @private
 _show_test_selector = function(
 	pattern,
@@ -473,17 +477,20 @@ end
 --- Shows the test selector UI
 --- Displays a two-pane floating window for selecting and running tests
 --- Top pane: List of test methods and class-level test actions
---- Bottom pane: Preview of Maven commands to be executed
---- @param pattern string The pattern to match test methods and classes
+--- Bottom pane: Preview of build commands to be executed
+--- @param pattern string The filetype to match test methods and classes ("java" or "go")
 --- @param getTestMethodCommands function Function that returns command templates for test methods
 --- @param fctDeleteFromMethodStore function Callback to delete method commands from the store
 --- @param fctAddToMethodStore function Callback to add method commands to the store
---- @param argumentsStore KeyValueStore The store containing custom Maven arguments
+--- @param fctOnSelect function Callback executed when a command is selected
+--- @param argumentsStore KeyValueStore The store containing custom build arguments
 --- @usage
----   show_test_selector(
+---   show_test_method_selector(
+---     "java",
 ---     function() return store.get("run_method") end,
 ---     function(cmd) store.remove("run_method", cmd) end,
 ---     function(cmd) store.add("run_method", cmd) end,
+---     function(cmd) print("Selected: " .. cmd) end,
 ---     argumentsStore
 ---   )
 function M.show_test_method_selector(
@@ -506,6 +513,14 @@ function M.show_test_method_selector(
 	)
 end
 
+--- Shows the test class selector UI
+--- Displays a two-pane floating window for selecting and running entire test class
+--- @param pattern string The filetype ("java" or "go")
+--- @param getTestClassCommands function Function that returns command templates for test class
+--- @param fctDeleteFromClassStore function Callback to delete class commands from the store
+--- @param fctAddToClassStore function Callback to add class commands to the store
+--- @param fctOnSelect function Callback executed when a command is selected
+--- @param argumentsStore KeyValueStore The store containing custom build arguments
 function M.show_test_class_selector(
 	pattern,
 	getTestClassCommands,
@@ -514,14 +529,42 @@ function M.show_test_class_selector(
 	fctOnSelect,
 	argumentsStore
 )
-	local fullyQualifiedMethodNames = require("maven-test.tests.parsers").get_test_file_name(pattern)
+	local fullyQualifiedClassName = require("maven-test.tests.parsers").get_test_file_name(pattern)
 	_show_test_selector(
 		pattern,
 		getTestClassCommands,
 		fctDeleteFromClassStore,
 		fctAddToClassStore,
 		fctOnSelect,
-		fullyQualifiedMethodNames,
+		fullyQualifiedClassName,
+		argumentsStore
+	)
+end
+
+--- Shows the test command selector UI
+--- Displays a two-pane floating window for selecting and running project-level commands
+--- @param pattern string The filetype ("java" or "go")
+--- @param getTestCommands function Function that returns command templates
+--- @param fctDeleteFromStore function Callback to delete commands from the store
+--- @param fctAddToStore function Callback to add commands to the store
+--- @param fctOnSelect function Callback executed when a command is selected
+--- @param argumentsStore KeyValueStore The store containing custom build arguments
+function M.show_test_command_selector(
+	pattern,
+	getTestCommands,
+	fctDeleteFromStore,
+	fctAddToStore,
+	fctOnSelect,
+	argumentsStore
+)
+	local fullyQualifiedName = require("maven-test.tests.parsers").get_project_fully_qualified_name()
+	_show_test_selector(
+		pattern,
+		getTestCommands,
+		fctDeleteFromStore,
+		fctAddToStore,
+		fctOnSelect,
+		fullyQualifiedName,
 		argumentsStore
 	)
 end

@@ -147,8 +147,19 @@ end
 --- Uses the first stored command for running all tests
 function ProjectFunctions:run_all_tests()
 	self:_initialize()
-	local cmd = self.store_cmds:first(RUN_ALL_KEY)
-	require("maven-test.runner.runner").run_all_tests(cmd, self.store_arguments)
+
+	require("maven-test.tests.ui").show_test_command_selector(self.projectConfig.pattern, function()
+		return self.store_cmds:get(RUN_ALL_KEY)
+	end, function(value)
+		self.store_cmds:remove(RUN_ALL_KEY, value)
+	end, function(value)
+		self.store_cmds:add(RUN_ALL_KEY, value)
+	end, function(cmdFormat)
+		self.store_cmds:move_first(RUN_ALL_KEY, cmdFormat)
+	end, self.store_arguments)
+
+	-- local cmd = self.store_cmds:first(RUN_ALL_KEY)
+	-- require("maven-test.runner.runner").run_all_tests(cmd, self.store_arguments)
 end
 
 --- Restore command store to default state

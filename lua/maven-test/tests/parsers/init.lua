@@ -31,8 +31,9 @@ end
 
 --- Get fully qualified test method names for all tests in the current buffer
 --- Delegates to language-specific parser (java or go)
+--- Reorders results to place the test under cursor at the top of the list
 --- @param filetype string Language identifier ("java" or "go")
---- @return JavaFullyQualifiedMethodName[]|GoFullyQualifiedMethodName[]|nil Array of fully qualified method name objects, or nil if package/class not found
+--- @return JavaFullyQualifiedMethodName[]|GoFullyQualifiedMethodName[]|nil Array of fully qualified method name objects with current test first, or nil if package/class not found
 function M.get_fully_qualified_test_method_names(filetype)
 	local fqnmn = require("maven-test.tests.parsers." .. filetype).get_fully_qualified_test_method_names()
 
@@ -54,6 +55,13 @@ end
 --- @return JavaFullyQualifiedClassName[]|GoFullyQualifiedFileName[]|nil Array containing fully qualified file/class name object, or nil if package/class not found
 function M.get_test_file_name(filetype)
 	return require("maven-test.tests.parsers." .. filetype).get_test_file_name()
+end
+
+--- Get the project-level fully qualified name
+--- Returns a ProjectFullyQualifiedName for project-wide commands
+--- @return ProjectFullyQualifiedName[] Array containing a single project fully qualified name object
+function M.get_project_fully_qualified_name()
+	return { require("maven-test.tests.parsers.FullyQualifiedNames").ProjectFullyQualifiedName.new() }
 end
 
 return M
