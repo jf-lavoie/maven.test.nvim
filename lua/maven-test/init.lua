@@ -74,9 +74,18 @@ M.config = {
 		maven = {
 			root_markers = { "pom.xml" },
 			pattern = "java",
-			test_commands = { "mvn test" },
-			test_file_commands = { "mvn test -Dtest={package}.{class}" },
-			test_method_commands = { "mvn test -Dtest={package}.{class}#{method}" },
+			test_commands = {
+				"mvn test",
+				'mvn test -Dmaven.surefire.debug="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005"',
+			},
+			test_file_commands = {
+				"mvn test -Dtest={package}.{class}",
+				'mvn test -Dtest={package}.{class} -Dmaven.surefire.debug="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005"',
+			},
+			test_method_commands = {
+				"mvn test -Dtest={package}.{class}#{method}",
+				'mvn test -Dtest={package}.{class}#{method} -Dmaven.surefire.debug="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005"',
+			},
 			commands = {
 				"mvn site",
 				"mvn clean",
@@ -93,9 +102,9 @@ M.config = {
 		gradle = {
 			root_markers = { "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts" },
 			pattern = "java",
-			test_commands = { "gradle test" },
-			test_file_commands = { "gradle test --tests {package}.{class}" },
-			test_method_commands = { "gradle test --tests {package}.{class}#{method}" },
+			test_commands = { "gradle test", "gradle test --debug-jvm" },
+			test_file_commands = { "gradle test --tests {package}.{class} --debug-jvm" },
+			test_method_commands = { "gradle test --tests {package}.{class}#{method} --debug-jvm" },
 		},
 
 		go = {
