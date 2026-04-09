@@ -41,7 +41,7 @@ M.register_commands = function(projectConfigs)
 				-- Test execution commands
 				vim.api.nvim_buf_create_user_command(args.buf, "MavenTest", function()
 					ensure_loaded()
-					require("maven-test.functions").run_test(projectConfig)
+					require("maven-test.functions").run_test_method(projectConfig)
 				end, { desc = "Open test method picker and run selected test" })
 
 				vim.api.nvim_buf_create_user_command(args.buf, "MavenTestClass", function()

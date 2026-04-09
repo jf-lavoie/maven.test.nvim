@@ -113,7 +113,7 @@ end
 --- Opens two-pane floating window with test list (top) and command preview (bottom)
 --- Detects test methods/functions in current file using treesitter
 --- User can select method, edit/delete commands, and execute tests
-function ProjectFunctions:run_test()
+function ProjectFunctions:run_test_method()
 	self:_initialize()
 	require("maven-test.tests.ui").show_test_method_selector(self.projectConfig.pattern, function()
 		return self.store_cmds:get(RUN_METHOD_KEY)
@@ -121,6 +121,8 @@ function ProjectFunctions:run_test()
 		self.store_cmds:remove(RUN_METHOD_KEY, value)
 	end, function(value)
 		self.store_cmds:add(RUN_METHOD_KEY, value)
+	end, function(cmdFormat)
+		self.store_cmds:move_first(RUN_METHOD_KEY, cmdFormat)
 	end, self.store_arguments)
 end
 
@@ -130,12 +132,14 @@ end
 function ProjectFunctions:run_test_class()
 	self:_initialize()
 
-	require("maven-test.tests.ui").show_class_selector(self.projectConfig.pattern, function()
+	require("maven-test.tests.ui").show_test_class_selector(self.projectConfig.pattern, function()
 		return self.store_cmds:get(RUN_CLASS_KEY)
 	end, function(value)
 		self.store_cmds:remove(RUN_CLASS_KEY, value)
 	end, function(value)
 		self.store_cmds:add(RUN_CLASS_KEY, value)
+	end, function(cmdFormat)
+		self.store_cmds:move_first(RUN_CLASS_KEY, cmdFormat)
 	end, self.store_arguments)
 end
 
@@ -161,7 +165,7 @@ end
 --- Useful for resetting after experimenting with custom arguments
 function ProjectFunctions:restore_arguments_store()
 	self:_initialize()
-	self.store_arg.empty_store()
+	self.store_arguments:empty_store()
 end
 
 --- Cache for ProjectFunctions instances per project type
@@ -202,9 +206,9 @@ end
 --- Show test selector UI for running a specific test method
 --- Opens two-pane floating window with test list (top) and command preview (bottom)
 --- @param projectConfig ProjectConfig The project configuration
-function M.run_test(projectConfig)
+function M.run_test_method(projectConfig)
 	local projectFunctions = _getCacheValue(projectConfig)
-	projectFunctions:run_test()
+	projectFunctions:run_test_method()
 end
 
 --- Run all tests in the current test class/file

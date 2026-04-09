@@ -258,15 +258,6 @@ end
 local function create_fully_qualidfied_commands(fullyQualifiedNames, testCommands, fctAddToStore, fctDeleteFromStore)
 	local fqnCommands = {}
 
-	-- for i, met in ipairs(fullyQualifiedMethodNames) do
-	-- 	if met.method.is_current then
-	-- 		-- Move current test to the top of the list
-	-- 		table.remove(fullyQualifiedMethodNames, i)
-	-- 		table.insert(fullyQualifiedMethodNames, 1, met)
-	-- 		break
-	-- 	end
-	-- end
-
 	for _, fqn in ipairs(fullyQualifiedNames) do
 		local formattedCmds = {}
 
@@ -304,6 +295,7 @@ show_command_editor = function(
 	getTestCommands,
 	fctDeleteFromStore,
 	fctAddToStore,
+	fctOnSelect,
 	fullyQualifiedNames,
 	argumentsStore
 )
@@ -313,6 +305,7 @@ show_command_editor = function(
 			getTestCommands,
 			fctDeleteFromStore,
 			fctAddToStore,
+			fctOnSelect,
 			fullyQualifiedNames,
 			argumentsStore
 		)
@@ -334,6 +327,7 @@ _show_test_selector = function(
 	getTestCommands,
 	fctDeleteFromStore,
 	fctAddToStore,
+	fctOnSelect,
 	fullyQualifiedNames,
 	argumentsStore
 )
@@ -367,6 +361,8 @@ _show_test_selector = function(
 
 		actionsWin:close()
 		commandsWin:close()
+
+		fctOnSelect(formattedCommand.format)
 
 		runner.run_command(formattedCommand.cmd, argumentsStore)
 	end
@@ -442,6 +438,7 @@ _show_test_selector = function(
 			getTestCommands,
 			fctDeleteFromStore,
 			fctAddToStore,
+			fctOnSelect,
 			fullyQualifiedNames,
 			argumentsStore
 		)
@@ -477,6 +474,7 @@ function M.show_test_method_selector(
 	getTestMethodCommands,
 	fctDeleteFromMethodStore,
 	fctAddToMethodStore,
+	fctOnSelect,
 	argumentsStore
 )
 	local fullyQualifiedMethodNames = require("maven-test.tests.parsers").get_fully_qualified_test_method_names(pattern)
@@ -485,24 +483,27 @@ function M.show_test_method_selector(
 		getTestMethodCommands,
 		fctDeleteFromMethodStore,
 		fctAddToMethodStore,
+		fctOnSelect,
 		fullyQualifiedMethodNames,
 		argumentsStore
 	)
 end
 
-function M.show_class_selector(
+function M.show_test_class_selector(
 	pattern,
 	getTestClassCommands,
-	fctDeleteFromMethodStore,
-	fctAddToMethodStore,
+	fctDeleteFromClassStore,
+	fctAddToClassStore,
+	fctOnSelect,
 	argumentsStore
 )
 	local fullyQualifiedMethodNames = require("maven-test.tests.parsers").get_test_file_name(pattern)
 	_show_test_selector(
 		pattern,
 		getTestClassCommands,
-		fctDeleteFromMethodStore,
-		fctAddToMethodStore,
+		fctDeleteFromClassStore,
+		fctAddToClassStore,
+		fctOnSelect,
 		fullyQualifiedMethodNames,
 		argumentsStore
 	)
