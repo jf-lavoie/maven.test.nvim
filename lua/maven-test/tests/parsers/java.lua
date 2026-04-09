@@ -1,14 +1,14 @@
 --- Java test parser using Treesitter
 --- Detects test methods and classes in Java files using treesitter queries
 --- Supports @Test and @ArchTest annotations
---- @module 'maven-test.tests.parser'
+--- @module 'maven-test.tests.parsers.java'
 
 local M = {}
 
 --- Get all test methods in the current buffer
 --- Searches for methods annotated with @Test or @ArchTest
 --- Also finds @ArchTest annotated fields (ArchUnit test rules)
---- @return table[] Array of test objects, each with: { name: string, line: number, type: "method", is_current: boolean }
+--- @return table[] Array of test objects, each with fields: name (string), line (number), is_current (boolean)
 --- @usage
 ---   local tests = parser.get_test_methods()
 ---   for _, test in ipairs(tests) do
@@ -176,7 +176,7 @@ end
 
 --- Get the test class name from the current buffer
 --- Extracts the first class declaration found in the file
---- @return table|nil Class object with: { name: string, line: number, type: "class" }, or nil if not found
+--- @return table|nil Class object with fields: name (string), line (number), or nil if not found
 --- @usage
 ---   local class = parser.get_test_class()
 ---   if class then
@@ -218,7 +218,7 @@ end
 
 --- Get fully qualified test method names for all test methods in the current buffer
 --- Creates JavaFullyQualifiedMethodName objects containing package, class, file path, and method info
---- @return JavaFullyQualifiedMethodName[]? Array of fully qualified method name objects, or nil if package or class not found
+--- @return JavaFullyQualifiedMethodName[]|nil Array of fully qualified method name objects, or nil if package or class not found
 --- @usage
 ---   local fqn_list = parser.get_fully_qualified_test_method_names()
 ---   if fqn_list then
@@ -262,13 +262,13 @@ end
 
 --- Get the fully qualified class name for the current Java test file
 --- Creates a JavaFullyQualifiedClassName object containing package, class, and file path
---- @return JavaFullyQualifiedClassName? The fully qualified class name object, or nil if package or class not found
+--- @return JavaFullyQualifiedClassName[]|nil Array containing a single fully qualified class name object, or nil if package or class not found
 --- @usage
 ---   local fqn_class = parser.get_test_file_name()
 ---   if fqn_class then
----     print("Fully qualified class: " .. fqn_class:fullyQualifiedFileName())
+---     print("Fully qualified class: " .. fqn_class[1]:fullyQualifiedFileName())
 ---   end
-M.get_test_file_name = function()
+function M.get_test_file_name()
 	local FullyQualifiedName = require("maven-test.tests.parsers.FullyQualifiedNames")
 	local JavaFullyQualifiedClassName = FullyQualifiedName.JavaFullyQualifiedClassName
 
@@ -284,7 +284,7 @@ M.get_test_file_name = function()
 	end
 	local class_ = FullyQualifiedName.Class.new(class.name, class.line)
 
-	return JavaFullyQualifiedClassName.new(package_, class_, vim.api.nvim_buf_get_name(0))
+	return { JavaFullyQualifiedClassName.new(package_, class_, vim.api.nvim_buf_get_name(0)) }
 end
 
 return M

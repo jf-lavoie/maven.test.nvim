@@ -35,14 +35,19 @@ function M.JavaFullyQualifiedClassName:fullyQualifiedFileName()
 	return self.package_.name .. "." .. self.class_.name
 end
 
+function M.JavaFullyQualifiedClassName:displayString()
+	return self.package_.name .. "." .. self.class_.name
+end
+
 --- Returns template values for Maven command formatting
 --- These values are used to substitute placeholders in command templates
---- @return table<string, string> Template values with keys: package, class, filepath
+--- @return table<string, string> Template values with keys: package, class, filepath, dirname
 function M.JavaFullyQualifiedClassName:templateValues()
 	return {
 		package = self.package_.name,
 		class = self.class_.name,
 		filepath = self.filepath,
+		dirname = vim.fs.dirname(self.filepath),
 	}
 end
 
@@ -54,7 +59,7 @@ end
 M.GoFullyQualifiedFileName = {}
 M.GoFullyQualifiedFileName.__index = M.GoFullyQualifiedFileName
 
---- Creates a new GoFullyQualifiedClassName instance
+--- Creates a new GoFullyQualifiedFileName instance
 --- @param package_ Package The Go package (e.g., Package.new("mypackage"))
 --- @param filepath string The absolute file path where the package is defined
 --- @return GoFullyQualifiedFileName A new instance for Go package test execution
@@ -72,14 +77,19 @@ function M.GoFullyQualifiedFileName:fullyQualifiedFileName()
 	return self.filepath
 end
 
+function M.GoFullyQualifiedFileName:displayString()
+	return self.filepath
+end
+
 --- Returns template values for Go test command formatting
 --- These values are used to substitute placeholders in command templates
---- @return table<string, string> Template values with keys: package, filepath
+--- @return table<string, string> Template values with keys: package, class (empty), filepath, dirname
 function M.GoFullyQualifiedFileName:templateValues()
 	return {
 		package = self.package_.name,
 		class = "",
 		filepath = self.filepath,
+		dirname = vim.fs.dirname(self.filepath),
 	}
 end
 
@@ -126,14 +136,14 @@ end
 
 --- Returns template values for Maven test command formatting
 --- These values are used to substitute placeholders in command templates
---- Note: filepath comes from the class object, not passed separately
---- @return table<string, string> Template values with keys: package, class, filepath, method
+--- @return table<string, string> Template values with keys: package, class, filepath, method, dirname
 function M.JavaFullyQualifiedMethodName:templateValues()
 	return {
 		package = self.package_.name,
 		class = self.class_.name,
 		filepath = self.filepath,
 		method = self.method.name,
+		dirname = vim.fs.dirname(self.filepath),
 	}
 end
 
@@ -178,14 +188,14 @@ end
 
 --- Returns template values for Go test command formatting
 --- These values are used to substitute placeholders in command templates
---- Note: class is empty string since Go doesn't have classes
---- @return table<string, string> Template values with keys: package, class (empty), method
+--- @return table<string, string> Template values with keys: package, class (empty), method, filepath, dirname
 function M.GoFullyQualifiedMethodName:templateValues()
 	return {
 		package = self.package_.name,
 		class = "",
 		method = self.method.name,
 		filepath = self.filepath,
+		dirname = vim.fs.dirname(self.filepath),
 	}
 end
 
@@ -268,10 +278,9 @@ function M.Class:isMethod()
 end
 
 --- Checks if this is a package
---- Note: This appears to be a bug - should return false for classes
---- @return boolean Always true for classes (questionable)
+--- @return boolean Always false for classes
 function M.Class:isPackage()
-	return true
+	return false
 end
 
 --- Represents a test method/function with its source location and cursor context
@@ -315,10 +324,9 @@ function M.Method:isMethod()
 end
 
 --- Checks if this is a package
---- Note: This appears to be a bug - should return false for methods
---- @return boolean Always true for methods (questionable)
+--- @return boolean Always false for methods
 function M.Method:isPackage()
-	return true
+	return false
 end
 
 return M
