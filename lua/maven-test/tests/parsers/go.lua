@@ -7,8 +7,8 @@ local M = {}
 
 --- Get the "test class" for Go files
 --- Go doesn't have classes, so this returns an empty placeholder object
---- This provides interface compatibility with Java parser for the test runner
---- @return table A class object with: { name: string (empty), line: number (-1) }
+--- This provides interface compatibility with the Java parser for the test runner
+--- @return table A class object with fields: name (empty string), line (-1)
 --- @usage
 ---   local class = parser.get_test_class()
 ---   -- Returns { name = "", line = -1 } for Go files
@@ -21,7 +21,7 @@ end
 
 --- Get all test functions in the current buffer
 --- Searches for functions with names starting with Test, Benchmark, Example, or Fuzz
---- @return table[] Array of test objects, each with: { name: string, line: number, type: "function", is_current: boolean }
+--- @return table[] Array of test objects, each with fields: name (string), line (number), is_current (boolean)
 --- @usage
 ---   local tests = parser.get_test_methods()
 ---   for _, test in ipairs(tests) do
@@ -121,7 +121,7 @@ end
 
 --- Get fully qualified test method names for all test functions in the current buffer
 --- Creates GoFullyQualifiedMethodName objects containing package, file path, and method info
---- @return GoFullyQualifiedMethodName[]? Array of fully qualified method name objects, or nil if package not found
+--- @return GoFullyQualifiedMethodName[]|nil Array of fully qualified method name objects, or nil if package not found
 --- @usage
 ---   local fqn_list = parser.get_fully_qualified_test_method_names()
 ---   if fqn_list then
@@ -159,13 +159,13 @@ end
 
 --- Get the fully qualified file name for the current Go test file
 --- Creates a GoFullyQualifiedFileName object containing package and file path
---- @return GoFullyQualifiedFileName? The fully qualified file name object, or nil if package not found
+--- @return GoFullyQualifiedFileName[]|nil Array containing a single fully qualified file name object, or nil if package not found
 --- @usage
 ---   local fqn_file = parser.get_test_file_name()
 ---   if fqn_file then
----     print("Package file: " .. fqn_file:fullyQualifiedFileName())
+---     print("Package file: " .. fqn_file[1]:fullyQualifiedFileName())
 ---   end
-M.get_test_file_name = function()
+function M.get_test_file_name()
 	local FullyQualifiedName = require("maven-test.tests.parsers.FullyQualifiedNames")
 	local GoFullyQualifiedFileName = FullyQualifiedName.GoFullyQualifiedFileName
 
@@ -175,7 +175,7 @@ M.get_test_file_name = function()
 	end
 	local package_ = FullyQualifiedName.Package.new(package_name)
 
-	return GoFullyQualifiedFileName.new(package_, vim.api.nvim_buf_get_name(0))
+	return { GoFullyQualifiedFileName.new(package_, vim.api.nvim_buf_get_name(0)) }
 end
 
 return M

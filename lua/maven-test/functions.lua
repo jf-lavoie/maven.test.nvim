@@ -115,7 +115,7 @@ end
 --- User can select method, edit/delete commands, and execute tests
 function ProjectFunctions:run_test()
 	self:_initialize()
-	require("maven-test.tests.ui").show_test_selector(self.projectConfig.pattern, function()
+	require("maven-test.tests.ui").show_test_method_selector(self.projectConfig.pattern, function()
 		return self.store_cmds:get(RUN_METHOD_KEY)
 	end, function(value)
 		self.store_cmds:remove(RUN_METHOD_KEY, value)
@@ -129,9 +129,14 @@ end
 --- Automatically detects class name and package using treesitter
 function ProjectFunctions:run_test_class()
 	self:_initialize()
-	local cmd = self.store_cmds:first(RUN_CLASS_KEY)
 
-	require("maven-test.runner.runner").run_test_class(self.projectConfig.pattern, cmd, self.store_arguments)
+	require("maven-test.tests.ui").show_class_selector(self.projectConfig.pattern, function()
+		return self.store_cmds:get(RUN_CLASS_KEY)
+	end, function(value)
+		self.store_cmds:remove(RUN_CLASS_KEY, value)
+	end, function(value)
+		self.store_cmds:add(RUN_CLASS_KEY, value)
+	end, self.store_arguments)
 end
 
 --- Run all tests in the project

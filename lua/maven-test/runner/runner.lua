@@ -72,29 +72,29 @@ function M.run_test_method(command, argumentsStore)
 	M.run_command(localCommand, argumentsStore)
 end
 
---- Run all tests in the current class
---- Constructs fully qualified class name: package.ClassName
---- Formats the command template with placeholders: {file}, {class}
---- @param command string The Maven command template with placeholders
---- @usage
----   runner.run_test_class("mvn test -Dtest={class}")
-function M.run_test_class(pattern, command, argumentsStore)
-	local class = require("maven-test.tests.parsers").get_test_class(pattern)
-	local package_name = require("maven-test.tests.parsers").get_package_name(pattern)
-
-	if not class or not package_name then
-		vim.notify("Could not determine test class or package", vim.log.levels.ERROR)
-		return
-	end
-
-	local templateValues = {
-		package = package_name,
-		class = class.name,
-	}
-
-	local localCommand = template(command, templateValues)
-	M.run_command(localCommand, argumentsStore)
-end
+--- --- Run all tests in the current class
+--- --- Constructs fully qualified class name: package.ClassName
+--- --- Formats the command template with placeholders: {file}, {class}
+--- --- @param command string The Maven command template with placeholders
+--- --- @usage
+--- ---   runner.run_test_class("mvn test -Dtest={class}")
+--- function M.run_test_class(pattern, command, argumentsStore)
+--- 	local class = require("maven-test.tests.parsers").get_test_class(pattern)
+--- 	local package_name = require("maven-test.tests.parsers").get_package_name(pattern)
+---
+--- 	if not class or not package_name then
+--- 		vim.notify("Could not determine test class or package", vim.log.levels.ERROR)
+--- 		return
+--- 	end
+---
+--- 	local templateValues = {
+--- 		package = package_name,
+--- 		class = class.name,
+--- 	}
+---
+--- 	local localCommand = template(command, templateValues)
+--- 	M.run_command(localCommand, argumentsStore)
+--- end
 
 --- Run all tests in the project
 --- Executes the command as-is without modification
