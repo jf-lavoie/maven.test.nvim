@@ -119,4 +119,31 @@ end
 --- 	return vim.fn.expand("%:t:r")
 --- end
 
+function M.get_fully_qualified_test_method_names()
+	local FullyQualifiedName = require("maven-test.tests.parsers.FullyQualifiedNames")
+	local GoFullyQualifiedMethodName = FullyQualifiedName.GoFullyQualifiedMethodName
+	local fqn_list = {}
+
+	local package_name = M.get_package_name()
+	if not package_name then
+		return nil
+	end
+
+	local package_ = FullyQualifiedName.Package.new(package_name)
+
+	local methods = M.get_test_methods()
+
+	for _, method in ipairs(methods) do
+		table.insert(
+			fqn_list,
+			GoFullyQualifiedMethodName.new(
+				package_,
+				FullyQualifiedName.Method.new(method.name, method.line, method.is_current)
+			)
+		)
+	end
+
+	return fqn_list
+end
+
 return M

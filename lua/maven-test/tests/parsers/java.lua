@@ -212,4 +212,56 @@ function M.get_test_class()
 	return nil
 end
 
+function M.get_fully_qualified_test_method_names()
+	local FullyQualifiedName = require("maven-test.tests.parsers.FullyQualifiedNames")
+	local JavaFullyQualifiedMethodName = FullyQualifiedName.JavaFullyQualifiedMethodName
+	local fqn_list = {}
+
+	local package_name = M.get_package_name()
+	if not package_name then
+		return nil
+	end
+	local package_ = FullyQualifiedName.Package.new(package_name)
+
+	local class = M.get_test_class()
+	if not class then
+		return nil
+	end
+	local class_ = FullyQualifiedName.Class.new(class.name, vim.api.nvim_buf_get_name(0), class.line)
+
+	local methods = M.get_test_methods()
+
+	for _, method in ipairs(methods) do
+		table.insert(
+			fqn_list,
+			JavaFullyQualifiedMethodName.new(
+				package_,
+				class_,
+				FullyQualifiedName.Method.new(method.name, method.line, method.is_current)
+			)
+		)
+	end
+
+	return fqn_list
+end
+
+M.get_test_file_name = function()
+	local FullyQualifiedName = require("maven-test.tests.parsers.FullyQualifiedNames")
+	local JavaFullyQualifiedClassName = FullyQualifiedName.JavaFullyQualifiedClassName
+
+	local package_name = M.get_package_name()
+	if not package_name then
+		return nil
+	end
+	local package_ = FullyQualifiedName.Package.new(package_name)
+
+	local class = M.get_test_class()
+	if not class then
+		return nil
+	end
+	local class_ = FullyQualifiedName.Class.new(class.name, class.line)
+
+	return JavaFullyQualifiedClassName.new(package_, class_)
+end
+
 return M
