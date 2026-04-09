@@ -46,6 +46,8 @@ function M.KeyValueStore:_initialize_store()
 		if self.onDataLoaded then
 			local item = self.onDataLoaded(value)
 			self.store[key] = item
+		else
+			self.store[key] = value
 		end
 	end
 	self._initialize_store = function() end
