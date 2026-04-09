@@ -19,62 +19,18 @@ local col = ui.col
 --- Forward declarations for circular dependencies
 local show_command_editor, _show_test_selector
 
---- --- Fully qualified name class
---- --- Represents a test identifier with its line number
---- --- @class FullyQualifiedName
---- --- @field package_name string The Java package name
---- --- @field class string The class name
---- --- @field test_name string? The test method or field name (nil for class-level tests)
---- --- @field line number The line number where the test is defined
---- --- @field is_current boolean Whether this test is the current one under the cursor
---- local FullyQualifiedName = {}
---- FullyQualifiedName.__index = FullyQualifiedName
----
---- --- Creates a new FullyQualifiedName instance
---- --- @param package_name string The Java package name (e.g., "com.example")
---- --- @param class string The class name
---- --- @param test_name string? The test method or field name (nil for class-level tests)
---- --- @param line number The line number where the test is defined
---- --- @param is_current boolean Whether this test is at the current cursor position
---- --- @return FullyQualifiedName
---- function FullyQualifiedName.new(package_name, class, test_name, line, is_current)
---- 	local self = setmetatable({}, FullyQualifiedName)
---- 	self.package_name = package_name
---- 	self.class = class
---- 	self.test_name = test_name
---- 	self.line = line
---- 	self.is_current = is_current
---- 	return self
---- end
----
---- --- Generates the fully qualified name text for the test
---- --- Returns either "package.Class#method" for test methods or "package.Class" for class-level tests
---- --- @return string The fully qualified test name in Maven format
---- function FullyQualifiedName:text()
---- 	if self.test_name then
---- 		return self.package_name .. "." .. self.class .. "#" .. self.test_name
---- 	else
---- 		return self.package_name .. "." .. self.class
---- 	end
---- end
----
---- --- Checks if this represents a class-level test
---- --- Returns true if test_name is nil (indicating a class-level test action)
---- --- @return boolean True if this is a class-level test, false if it's a method-level test
---- function FullyQualifiedName:isClass()
---- 	return self.test_name == nil
---- end
----
---- --- Converts the test identifier to a human-readable string
---- --- Combines the fully qualified name with its line number
---- --- @return string The test identifier in format "package.Class#method (line N)"
---- function FullyQualifiedName:toString()
---- 	return self:text() .. " (line " .. self.line .. ")"
---- end
-
+--- Fully qualified command class
+--- Links a test method or class to its corresponding formatted Maven commands
+--- @class FullyQualifiedCommand
+--- @field fullyQualifiedMethodName FullyQualifiedMethodName The fully qualified name object (Java or Go)
+--- @field formattedCommands FormattedCommand[] Array of formatted Maven commands for this test
 local FullyQualifiedCommand = {}
 FullyQualifiedCommand.__index = FullyQualifiedCommand
 
+--- Creates a new FullyQualifiedCommand
+--- @param fullyQualifiedMethodName FullyQualifiedMethodName The fully qualified name object
+--- @param formattedCommands FormattedCommand[] Array of formatted commands
+--- @return FullyQualifiedCommand
 function FullyQualifiedCommand.new(fullyQualifiedMethodName, formattedCommands)
 	local self = setmetatable({}, FullyQualifiedCommand)
 	self.fullyQualifiedMethodName = fullyQualifiedMethodName
@@ -250,6 +206,7 @@ local function update_preview(actionsWin, commandsWin, fqnCommands, argumentsSto
 end
 
 --- Displays fully qualified names in the actions window
+--- Renders test method names with indicators for current test
 --- @param theWin FloatingWindow The window to update
 --- @param fqnCommandsInfo FullyQualifiedCommand[] Array of fully qualified commands
 --- @private
@@ -271,24 +228,15 @@ local function show_fully_qualified_names(theWin, fqnCommandsInfo)
 	)
 end
 
---- Create fully qualified test names from package, class, and methods
---- First entry is the test class, followed by individual test methods
---- @param package_name string The Java package name
---- @param class table Table with 'name', 'is_current' and 'line' fields for the test class
---- @param testMethods table[] Array of tables, each with 'name' and 'line' fields
---- @return FullyQualifiedName[] Array of fully qualified name objects
+--- Creates fully qualified command objects from test method names and command templates
+--- Substitutes template placeholders (package, class, method) with actual values
+--- Moves the current test (under cursor) to the top of the list
+--- @param fullyQualifiedMethodNames FullyQualifiedMethodName[] Array of fully qualified method names from parser
+--- @param testMethodCommands string[] Array of command templates with placeholders
+--- @param fctAddToMethodStore function Callback function(cmd) to add commands to store
+--- @param fctDeleteFromMethodStore function Callback function(cmd) to delete commands from store
+--- @return FullyQualifiedCommand[] Array of fully qualified commands ready for display and execution
 --- @private
-local function create_fully_qualified_names(package_name, class, testMethods)
-	local names = {}
-
-	table.insert(names, FullyQualifiedName.new(package_name, class.name, nil, class.line, false))
-
-	for _, test in ipairs(testMethods) do
-		table.insert(names, FullyQualifiedName.new(package_name, class.name, test.name, test.line, test.is_current))
-	end
-	return names
-end
-
 local function create_fully_qualidfied_commands(
 	fullyQualifiedMethodNames,
 	testMethodCommands,
